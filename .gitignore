@@ -38,3 +38,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore Drizzle Studio and meta files
+.drizzle/
+drizzle/meta/
+drizzle/_*
+drizzle
+
+# Don't ignore migration files
+!drizzle/migrations/
