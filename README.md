@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fundbox
 
-## Getting Started
+A Next.js application with Drizzle ORM and PostgreSQL.
 
-First, run the development server:
+## Requirements
+
+- Bun (https://bun.sh)
+- PostgreSQL 14+ (https://brew.sh/): `brew install postgresql@14`
+
+## Project Setup
+
+### 1. Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL="postgres://postgres:yourpassword@localhost:5432/fundbox"
+```
+
+### 3. Setup Database
+
+Connect to PostgreSQL and create database:
+
+```bash
+psql -U postgres
+CREATE DATABASE fundbox;
+CREATE USER fundbox_user WITH PASSWORD 'test123';
+GRANT ALL PRIVILEGES ON DATABASE fundbox TO fundbox_user;
+ALTER DATABASE fundbox OWNER TO fundbox_user;
+\q # to exit
+```
+
+### 4. Run migrations
+
+```bash
+bun db:generate
+bun db:push
+```
+
+### 5. Verify migrations
+
+```bash
+psql -d fundbox -U fundbox_user -W
+\dt
+```
+
+### 6. Start development
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Available Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bun run dev        # Start development server
+bun run db:generate  # Generate migrations
+bun run db:push     # Push migrations to database
+```
