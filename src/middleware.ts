@@ -6,7 +6,6 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
-  // Add this debug log
   console.log("🚀 Middleware Path:", req.nextUrl.pathname);
 
   try {
@@ -15,7 +14,6 @@ export async function middleware(req: NextRequest) {
       error,
     } = await supabase.auth.getSession();
 
-    // Add debug logs
     console.log("🔑 Session Check:", {
       hasSession: !!session,
       sessionError: error?.message,
