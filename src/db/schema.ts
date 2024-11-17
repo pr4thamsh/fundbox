@@ -3,10 +3,10 @@ import { timestamps } from "./columns.helper";
 
 export const admins = table("admins", {
   id: integer().primaryKey(),
-  firstName: varchar("first_name", { length: 256 }),
-  lastName: varchar("last_name", { length: 256 }),
-  email: varchar(),
-  phone: integer(),
+  firstName: varchar("first_name", { length: 256 }).notNull(),
+  lastName: varchar("last_name", { length: 256 }).notNull(),
+  email: varchar().notNull().unique(),
+  phone: varchar().notNull(),
   organizationId: integer("organization_id").references(() => organizations.id),
   ...timestamps,
 });
