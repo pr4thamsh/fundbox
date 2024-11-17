@@ -2,8 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { admins } from "@/db/schema";
+import bcrypt from "bcryptjs";
 
 type RequestData = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -13,7 +15,7 @@ type RequestData = {
 
 type ResponseData = {
   message: string;
-  adminId?: number;
+  adminId?: string;
   error?: unknown;
 };
 
@@ -47,13 +49,18 @@ export default async function handler(
       });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(body.password, salt);
+
     const [newAdmin] = await db
       .insert(admins)
       .values({
+        id: body.id,
         firstName: body.firstName,
         lastName: body.lastName,
         email: body.email,
         phone: body.phone,
+        password: hashedPassword,
       })
       .returning({ id: admins.id });
 

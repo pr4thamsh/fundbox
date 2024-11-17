@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 const registerSchema = z
   .object({
@@ -79,6 +79,13 @@ export default function RegisterPage() {
       } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
+        options: {
+          data: {
+            first_name: values.firstName,
+            last_name: values.lastName,
+            phone: values.phone,
+          },
+        },
       });
 
       if (authError) throw authError;
@@ -90,6 +97,7 @@ export default function RegisterPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            id: user.id,
             firstName: values.firstName,
             lastName: values.lastName,
             email: values.email,
@@ -115,8 +123,8 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-grow container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto">
+      <div className="flex flex-grow container items-center mx-auto px-4 py-8">
+        <Card className="max-w-2xl mx-auto w-full">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
               Create an account

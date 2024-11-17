@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LockIcon, MailIcon } from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-// Form validation schema
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
@@ -37,9 +37,9 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClientComponentClient();
   const [error, setError] = useState("");
 
-  // Initialize form
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -51,15 +51,54 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
     setError("");
+    console.log("🔐 Attempting login...");
 
     try {
-      // Here you would typically make an API call to authenticate the admin
-      console.log(values);
-      // Redirect to dashboard after successful login
-      router.push("/dashboard");
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email: values.email,
+          password: values.password,
+        },
+      );
+
+      console.log("📡 Auth Response:", {
+        success: !!data.session,
+        user: !!data.user,
+        error: authError?.message,
+      });
+
+      if (authError) throw authError;
+
+      if (data.user) {
+        try {
+          const response = await fetch("/api/admin/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: values.email,
+            }),
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || "Failed to login");
+          }
+
+          const adminData = await response.json();
+          console.log("✅ Admin Data:", adminData);
+
+          router.refresh();
+          router.push("/dashboard");
+        } catch (apiError) {
+          console.error("❌ API Error:", apiError);
+          throw apiError;
+        }
+      }
     } catch (error) {
+      console.error("❌ Login Error:", error);
       setError("Invalid email or password");
-      console.log(error);
     } finally {
       setIsLoading(false);
     }
