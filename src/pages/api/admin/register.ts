@@ -1,20 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { admins } from "@/db/schema";
+import bcrypt from "bcryptjs";
 
 type RequestData = {
-  orgId: string;
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   password: string;
-  phoneNumber: string;
 };
 
 type ResponseData = {
   message: string;
   adminId?: string;
-  error?: string;
+  error?: unknown;
 };
 
 export default async function handler(
@@ -28,70 +30,49 @@ export default async function handler(
   try {
     const body = req.body as RequestData;
 
-    // Input validation
-    if (
-      !body.email ||
-      !body.password ||
-      !body.orgId ||
-      !body.firstName ||
-      !body.lastName ||
-      !body.phoneNumber
-    ) {
+    if (!body.email || !body.firstName || !body.lastName || !body.phone) {
       return res.status(400).json({
         message: "Validation failed",
         error: "Missing required fields",
       });
     }
 
-    // Check if email already exists
-    const existingAdmin = await db.execute(sql`
-      SELECT email FROM admin WHERE email = ${body.email}
-    `);
+    const existingAdmin = await db
+      .select()
+      .from(admins)
+      .where(eq(admins.email, body.email));
 
-    if (existingAdmin.count > 0) {
+    if (existingAdmin.length > 0) {
       return res.status(409).json({
         message: "Registration failed",
         error: "Email already registered",
       });
     }
 
-    // Check if organization exists
-    const organization = await db.execute(sql`
-      SELECT orgid FROM organization WHERE orgid = ${body.orgId}
-    `);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(body.password, salt);
 
-    if (organization.count === 0) {
-      return res.status(404).json({
-        message: "Registration failed",
-        error: "Organization not found",
-      });
-    }
-
-    // Insert new admin
-    const result = await db.execute(sql`
-      INSERT INTO admin (orgid, fname, lname, email, password, phoneno)
-      VALUES (
-        ${body.orgId},
-        ${body.firstName},
-        ${body.lastName},
-        ${body.email},
-        ${body.password},
-        ${body.phoneNumber}
-      )
-      RETURNING id
-    `);
-
-    const adminId = result;
+    const [newAdmin] = await db
+      .insert(admins)
+      .values({
+        id: body.id,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+        phone: body.phone,
+        password: hashedPassword,
+      })
+      .returning({ id: admins.id });
 
     return res.status(201).json({
       message: "Admin registered successfully",
-      adminId: adminId,
+      adminId: newAdmin.id,
     });
   } catch (error) {
     console.error("Registration error:", error);
     return res.status(500).json({
       message: "Registration failed",
-      error: "Internal server error",
+      error: error,
     });
   }
 }

@@ -1,18 +1,28 @@
-import { pgTable as table, integer, varchar, date } from "drizzle-orm/pg-core";
+import {
+  pgTable as table,
+  integer,
+  varchar,
+  date,
+  serial,
+  text,
+} from "drizzle-orm/pg-core";
 import { timestamps } from "./columns.helper";
+import { InferSelectModel } from "drizzle-orm";
 
 export const admins = table("admins", {
-  id: integer().primaryKey(),
-  firstName: varchar("first_name", { length: 256 }),
-  lastName: varchar("last_name", { length: 256 }),
-  email: varchar(),
-  phone: integer(),
+  id: text("id").primaryKey(),
+  firstName: varchar("first_name", { length: 256 }).notNull(),
+  lastName: varchar("last_name", { length: 256 }).notNull(),
+  email: varchar().notNull().unique(),
+  phone: varchar().notNull(),
+  password: varchar("password").notNull(),
   organizationId: integer("organization_id").references(() => organizations.id),
   ...timestamps,
 });
+export type Admin = InferSelectModel<typeof admins>;
 
 export const organizations = table("organizations", {
-  id: integer().primaryKey(),
+  id: serial().primaryKey(),
   name: varchar({ length: 256 }),
   street: varchar(),
   postalCode: varchar("postal_code"),
@@ -20,13 +30,13 @@ export const organizations = table("organizations", {
 });
 
 export const fundraisers = table("fundraisers", {
-  id: integer().primaryKey(),
+  id: serial().primaryKey(),
   title: varchar(),
   description: varchar(),
   startDate: date("start_date"),
   endDate: date("end_date"),
   organizationId: integer("organization_id").references(() => organizations.id),
-  adminId: integer("admin_id").references(() => admins.id),
+  adminId: text("admin_id").references(() => admins.id),
   ...timestamps,
 });
 
