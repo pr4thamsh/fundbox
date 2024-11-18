@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
-import { admins } from "@/db/schema";
 import bcrypt from "bcryptjs";
+import { admins } from "@/db/schema/admins";
 
 type RequestData = {
   id: string;

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
-import { Admin, admins } from "@/db/schema";
+import { type Admin, admins } from "@/db/schema/admins";
 
 type RequestData = {
   email: string;

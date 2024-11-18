@@ -1,11 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
-import { fundraisers } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
-
-type Fundraiser = InferSelectModel<typeof fundraisers>;
-type NewFundraiser = InferInsertModel<typeof fundraisers>;
+import {
+  type Fundraiser,
+  type NewFundraiser,
+  fundraisers,
+} from "@/db/schema/fundraisers";
 
 type CreateFundraiserBody = {
   title: string;
