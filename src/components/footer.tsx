@@ -1,9 +1,9 @@
-import { Link } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t py-8">
-      <div className="container mx-auto px-4">
+    <footer className="border-t">
+      <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="font-semibold mb-4">About FundBox</h3>
@@ -22,7 +22,7 @@ export function Footer() {
                 <Link href="/how-it-works">How It Works</Link>
               </li>
               <li>
-                <Link href="/fundraisers">Browse Fundraisers</Link>
+                <Link href="/explore">Browse Fundraisers</Link>
               </li>
             </ul>
           </div>
@@ -43,9 +43,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Connect With Us</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Email: support@fundbox.com</li>
-              <li>Phone: (555) 123-4567</li>
-              <li>Location: Worldwide</li>
+              <li>Email: team@fundbox.live</li>
+              <li>Phone: (709) 685-5991</li>
+              <li>Location: St. John&apos;s, NL</li>
             </ul>
           </div>
         </div>

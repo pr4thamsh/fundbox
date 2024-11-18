@@ -4,7 +4,6 @@ import { fundraisers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
-// Define types based on schema
 type Fundraiser = InferSelectModel<typeof fundraisers>;
 type NewFundraiser = InferInsertModel<typeof fundraisers>;
 
@@ -17,7 +16,7 @@ type CreateFundraiserBody = {
   adminId: string;
 };
 
-type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, 'adminId'>>;
+type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, "adminId">>;
 
 type ResponseData = {
   message: string;
@@ -25,14 +24,13 @@ type ResponseData = {
   error?: string;
 };
 
-// Helper function to format date to ISO string
 const formatDate = (date: Date): string => {
   return date.toISOString();
 };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -53,11 +51,11 @@ export default async function handler(
 
 async function getFundraisers(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { organizationId } = req.query;
-    
+
     let result: Fundraiser[];
 
     if (organizationId) {
@@ -66,9 +64,7 @@ async function getFundraisers(
         .from(fundraisers)
         .where(eq(fundraisers.organizationId, Number(organizationId)));
     } else {
-      result = await db
-        .select()
-        .from(fundraisers);
+      result = await db.select().from(fundraisers);
     }
 
     return res.status(200).json({
@@ -86,15 +82,15 @@ async function getFundraisers(
 
 async function getFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
-    
+
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -124,13 +120,20 @@ async function getFundraiser(
 
 async function createFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
-    
+
     // Validate required fields
-    if (!body.title || !body.description || !body.startDate || !body.endDate || !body.organizationId || !body.adminId) {
+    if (
+      !body.title ||
+      !body.description ||
+      !body.startDate ||
+      !body.endDate ||
+      !body.organizationId ||
+      !body.adminId
+    ) {
       return res.status(400).json({
         message: "Validation failed",
         error: "Missing required fields",
@@ -185,15 +188,15 @@ async function createFundraiser(
 
 async function updateFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
-    
+
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -213,9 +216,10 @@ async function updateFundraiser(
 
     // Prepare update data with date conversions
     const updateValues: Partial<NewFundraiser> = {};
-    
+
     if (updateData.title) updateValues.title = updateData.title;
-    if (updateData.description) updateValues.description = updateData.description;
+    if (updateData.description)
+      updateValues.description = updateData.description;
     if (updateData.startDate) {
       const startDate = new Date(updateData.startDate);
       updateValues.startDate = formatDate(startDate);
@@ -224,7 +228,8 @@ async function updateFundraiser(
       const endDate = new Date(updateData.endDate);
       updateValues.endDate = formatDate(endDate);
     }
-    if (updateData.organizationId) updateValues.organizationId = updateData.organizationId;
+    if (updateData.organizationId)
+      updateValues.organizationId = updateData.organizationId;
 
     const [updatedFundraiser] = await db
       .update(fundraisers)
@@ -247,15 +252,15 @@ async function updateFundraiser(
 
 async function deleteFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
-    
+
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -271,9 +276,7 @@ async function deleteFundraiser(
       });
     }
 
-    await db
-      .delete(fundraisers)
-      .where(eq(fundraisers.id, Number(id)));
+    await db.delete(fundraisers).where(eq(fundraisers.id, Number(id)));
 
     return res.status(200).json({
       message: "Fundraiser deleted successfully",

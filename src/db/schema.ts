@@ -35,6 +35,8 @@ export const fundraisers = table("fundraisers", {
   description: varchar(),
   startDate: date("start_date"),
   endDate: date("end_date"),
+  ticketsSold: integer(),
+  fundRaised: integer(),
   // organizationId: integer("organization_id").references(() => organizations.id),
   organizationId: integer("organization_id"),
   adminId: text("admin_id").references(() => admins.id),
