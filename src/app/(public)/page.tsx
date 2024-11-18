@@ -11,9 +11,9 @@ import { GiftIcon, HeartIcon, TicketIcon } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-12">
         {/* Hero Section */}
         <section className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -23,7 +23,7 @@ export default function LandingPage() {
             Connect with causes you care about through our unique lucky draw
             system. Support charities and get a chance to win exciting prizes.
           </p>
-          <Link href="/explre">
+          <Link href="/explore">
             <Button size="lg" className="text-lg px-8">
               Explore Fundraisers
             </Button>

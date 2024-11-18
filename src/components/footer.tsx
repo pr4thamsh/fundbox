@@ -43,9 +43,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Connect With Us</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Email: support@fundbox.com</li>
-              <li>Phone: (555) 123-4567</li>
-              <li>Location: Montreal, Canada</li>
+              <li>Email: team@fundbox.live</li>
+              <li>Phone: (709) 685-5991</li>
+              <li>Location: St. John&apos;s, NL</li>
             </ul>
           </div>
         </div>

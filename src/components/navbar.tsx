@@ -14,16 +14,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LayoutDashboard, LogOut, CircleUserRound } from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useState } from "react";
 
-const navigation = [
-  { name: "Home", href: "/" },
-  { name: "Explore", href: "/explore" },
-  { name: "How It Works", href: "/how-it-works" },
-];
+const navigation = [{ name: "Explore", href: "/explore" }];
 
 export function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClientComponentClient();
+
+  const handleSignOut = async () => {
+    try {
+      setIsLoading(true);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <header className="border-b">
@@ -92,9 +103,10 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center cursor-pointer"
+                    disabled={isLoading}
                     onSelect={(event) => {
                       event.preventDefault();
-                      // Sign out functionality will go here
+                      handleSignOut();
                     }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
