@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { CalendarDays, Timer } from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -30,10 +31,13 @@ type Fundraiser = {
   startDate: string;
   endDate: string;
   organizationId: number;
+  ticketsSold?: number | null;
+  fundRaised?: number | null;
 };
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [fundraisers, setFundraisers] = useState<Fundraiser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -108,6 +112,10 @@ export default function DashboardPage() {
       console.error("Failed to fetch fundraisers:", error);
     }
   }
+
+  const handleCardClick = (id: number) => {
+    router.push(`/dashboard/fundraiser/${id}`);
+  };
 
   return (
     <div className="space-y-6 p-6 pb-16">
@@ -199,11 +207,10 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {fundraisers.map((fundraiser) => {
-          // Add timezone offset when creating Date objects for display
           const fixDate = (dateString: string | null) => {
             if (!dateString) return new Date();
-            const date = new Date(dateString);
-            date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
             return date;
           };
 
@@ -212,30 +219,40 @@ export default function DashboardPage() {
             fixDate(fundraiser.endDate) >= new Date();
 
           return (
-            <Card key={fundraiser.id} className="flex flex-col">
+            <Card
+              key={fundraiser.id}
+              className="flex flex-col transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+              onClick={() => handleCardClick(fundraiser.id)}
+            >
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle>{fundraiser.title}</CardTitle>
+                <div className="flex justify-between items-start space-x-4">
+                  <div>
+                    <CardTitle className="text-xl">{fundraiser.title}</CardTitle>
+                    <CardDescription className="mt-2 line-clamp-2">
+                      {fundraiser.description}
+                    </CardDescription>
+                  </div>
                   {isActive && (
                     <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
                       Active
                     </span>
                   )}
                 </div>
-                <CardDescription className="line-clamp-2">{fundraiser.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Start Date: {fixDate(fundraiser.startDate).toLocaleDateString()}</p>
-                  <p>End Date: {fixDate(fundraiser.endDate).toLocaleDateString()}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Start:</span>
+                    <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Timer className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-muted-foreground">End:</span>
+                    <span>{fixDate(fundraiser.endDate).toLocaleDateString()}</span>
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter className="justify-end border-t pt-4">
-                <Button variant="outline" size="sm">
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-              </CardFooter>
             </Card>
           );
         })}

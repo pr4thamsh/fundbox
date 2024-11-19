@@ -26,7 +26,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   switch (req.method) {
     case "GET":
@@ -46,16 +46,30 @@ export default async function handler(
 }
 
 function handleDates(dateStr: string | null) {
-  const today = new Date().toISOString().split("T")[0];
+  // Get today's date in local timezone
+  if (!dateStr) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return {
+      forValidation: today,
+      forStorage: today.toISOString().split("T")[0],
+    };
+  }
+
+  // Handle input date
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day); // Create date in local timezone
+  date.setHours(0, 0, 0, 0);
+
   return {
-    forValidation: new Date((dateStr || today) + "T00:00:00.000Z"),
-    forStorage: dateStr || today,
+    forValidation: date,
+    forStorage: dateStr,
   };
 }
 
 async function getFundraisers(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   try {
     const { organizationId } = req.query;
@@ -86,7 +100,7 @@ async function getFundraisers(
 
 async function getFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   try {
     const { id } = req.query;
@@ -124,7 +138,7 @@ async function getFundraiser(
 
 async function createFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
@@ -143,18 +157,19 @@ async function createFundraiser(
       });
     }
 
+    const today = handleDates(null);
     const start = handleDates(body.startDate);
     const end = handleDates(body.endDate);
-    const today = handleDates(new Date().toISOString().split("T")[0]);
 
-    if (start.forValidation < today.forValidation) {
+    // Compare dates using the time-stripped values
+    if (start.forValidation.getTime() < today.forValidation.getTime()) {
       return res.status(400).json({
         message: "Validation failed",
-        error: "Start date can't be in the past",
+        error: "Start date must be today or in the future",
       });
     }
 
-    if (end.forValidation <= start.forValidation) {
+    if (end.forValidation.getTime() <= start.forValidation.getTime()) {
       return res.status(400).json({
         message: "Validation failed",
         error: "End date must be after start date",
@@ -164,8 +179,8 @@ async function createFundraiser(
     const newFundraiserData: NewFundraiser = {
       title: body.title,
       description: body.description,
-      startDate: start.forStorage,
-      endDate: end.forStorage,
+      startDate: body.startDate,
+      endDate: body.endDate,
       organizationId: body.organizationId,
       adminId: body.adminId,
     };
@@ -175,19 +190,9 @@ async function createFundraiser(
       .values(newFundraiserData)
       .returning();
 
-    // Format dates in the response
-    const formattedFundraiser = {
-      ...newFundraiser,
-      startDate: newFundraiser.startDate,
-      endDate: newFundraiser.endDate,
-      isActive:
-        start.forValidation <= today.forValidation &&
-        end.forValidation >= today.forValidation,
-    };
-
     return res.status(201).json({
       message: "Fundraiser created successfully",
-      data: formattedFundraiser,
+      data: newFundraiser,
     });
   } catch (error) {
     console.error("Create fundraiser error:", error);
@@ -200,7 +205,7 @@ async function createFundraiser(
 
 async function updateFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   try {
     const { id } = req.query;
@@ -224,7 +229,6 @@ async function updateFundraiser(
     }
 
     const updateValues: Partial<NewFundraiser> = {};
-    const now = new Date();
 
     if (updateData.title) updateValues.title = updateData.title;
     if (updateData.description)
@@ -232,24 +236,29 @@ async function updateFundraiser(
     if (updateData.organizationId)
       updateValues.organizationId = updateData.organizationId;
 
+    // Use the same date handling for updates
     if (updateData.startDate) {
-      const newStart = new Date(updateData.startDate);
-      if (newStart < now) {
+      const today = handleDates(null);
+      const newStart = handleDates(updateData.startDate);
+
+      if (newStart.forValidation.getTime() < today.forValidation.getTime()) {
         return res.status(400).json({
           message: "Validation failed",
-          error: "Start date can't be in the past",
+          error: "Start date must be today or in the future",
         });
       }
       updateValues.startDate = updateData.startDate;
     }
 
     if (updateData.endDate) {
-      const newEnd = new Date(updateData.endDate);
       const startToCheck = updateData.startDate
-        ? new Date(updateData.startDate)
-        : new Date(existingFundraiser.startDate!);
+        ? handleDates(updateData.startDate)
+        : handleDates(existingFundraiser.startDate!);
+      const newEnd = handleDates(updateData.endDate);
 
-      if (newEnd <= startToCheck) {
+      if (
+        newEnd.forValidation.getTime() <= startToCheck.forValidation.getTime()
+      ) {
         return res.status(400).json({
           message: "Validation failed",
           error: "End date must be after start date",
@@ -279,7 +288,7 @@ async function updateFundraiser(
 
 async function deleteFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   try {
     const { id } = req.query;
