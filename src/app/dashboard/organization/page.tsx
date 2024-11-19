@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,39 +18,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const exampleOrganizations = [
-  {
-    id: 1,
-    name: "Tech for Good Foundation",
-    street: "123 Innovation Ave",
-    postalCode: "12345",
-    state: "California",
-    city: "San Francisco",
-  },
-  {
-    id: 2,
-    name: "Green Earth Initiative",
-    street: "456 Eco Street",
-    postalCode: "67890",
-    state: "New York",
-    city: "Brooklyn",
-  },
-  {
-    id: 3,
-    name: "Education First Trust",
-    street: "789 Learning Lane",
-    postalCode: "34567",
-    state: "Texas",
-    city: "Austin",
-  },
-];
+type Organization = {
+  id: number;
+  name: string;
+  street: string;
+  postalCode: string;
+};
 
 const createOrgSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
   street: z.string().min(1, "Street address is required"),
-  postalCode: z
-    .string()
-    .regex(/^\d{5}(-\d{4})?$/, "Please enter a valid postal code"),
+  postalCode: z.string().min(6, "Please enter a valid postal code"),
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
 });
@@ -62,6 +39,9 @@ export default function OrganizationPage() {
   const [selectedOrg, setSelectedOrg] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   const form = useForm<z.infer<typeof createOrgSchema>>({
     resolver: zodResolver(createOrgSchema),
@@ -74,6 +54,29 @@ export default function OrganizationPage() {
     },
   });
 
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  async function fetchOrganizations() {
+    setIsFetching(true);
+    setFetchError("");
+
+    try {
+      const response = await fetch("/api/organization");
+      if (!response.ok) {
+        throw new Error("Failed to fetch organizations");
+      }
+      const data = await response.json();
+      setOrganizations(data.data || []);
+    } catch (error) {
+      setFetchError("Failed to load organizations");
+      console.error("Fetch error:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  }
+
   async function onJoinOrg() {
     if (!selectedOrg) return;
     setIsLoading(true);
@@ -81,7 +84,7 @@ export default function OrganizationPage() {
 
     try {
       console.log("Joining organization:", selectedOrg);
-      // API call here
+      // Implement join organization logic here
     } catch (error) {
       setError("Failed to join organization");
       console.error(error);
@@ -95,8 +98,24 @@ export default function OrganizationPage() {
     setError("");
 
     try {
-      console.log("Creating organization:", values);
-      // API call here
+      const response = await fetch("/api/organization", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: values.name,
+          street: values.street,
+          postalCode: values.postalCode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create organization");
+      }
+
+      await fetchOrganizations();
+      form.reset();
     } catch (error) {
       setError("Failed to create organization");
       console.error(error);
@@ -128,6 +147,12 @@ export default function OrganizationPage() {
             </Alert>
           )}
 
+          {fetchError && (
+            <Alert variant="destructive">
+              <AlertDescription>{fetchError}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="relative">
             <div className="w-full">
               <Button
@@ -136,11 +161,13 @@ export default function OrganizationPage() {
                 aria-expanded={open}
                 className="w-full justify-between"
                 onClick={() => setOpen(!open)}
+                disabled={isFetching}
               >
                 <span className="truncate">
                   {selectedOrg
-                    ? exampleOrganizations.find((org) => org.id === selectedOrg)
-                        ?.name
+                    ? organizations.find((org) => org.id === selectedOrg)?.name
+                    : isFetching
+                    ? "Loading organizations..."
                     : "Select organization..."}
                 </span>
                 <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -156,12 +183,10 @@ export default function OrganizationPage() {
                     value={searchValue}
                   />
                 </div>
-                <div className="max-h-[200px] overflow-y-auto p-2">
-                  {exampleOrganizations
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {organizations
                     .filter((org) =>
-                      org.name
-                        .toLowerCase()
-                        .includes(searchValue.toLowerCase()),
+                      org.name.toLowerCase().includes(searchValue.toLowerCase())
                     )
                     .map((org) => (
                       <div
@@ -176,43 +201,28 @@ export default function OrganizationPage() {
                         {org.name}
                       </div>
                     ))}
-                  {exampleOrganizations.filter((org) =>
-                    org.name.toLowerCase().includes(searchValue.toLowerCase()),
+                  {organizations.filter((org) =>
+                    org.name.toLowerCase().includes(searchValue.toLowerCase())
                   ).length === 0 && (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      No organization found.
+                      No organizations found.
                     </div>
                   )}
                 </div>
               </div>
             )}
           </div>
+
           {selectedOrg && (
             <div className="space-y-4">
               <div className="rounded-md border p-4 bg-muted/50">
                 <h3 className="font-medium">
-                  {
-                    exampleOrganizations.find((org) => org.id === selectedOrg)
-                      ?.name
-                  }
+                  {organizations.find((org) => org.id === selectedOrg)?.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
+                  {organizations.find((org) => org.id === selectedOrg)?.street},{" "}
                   {
-                    exampleOrganizations.find((org) => org.id === selectedOrg)
-                      ?.street
-                  }
-                  ,{" "}
-                  {
-                    exampleOrganizations.find((org) => org.id === selectedOrg)
-                      ?.city
-                  }
-                  ,{" "}
-                  {
-                    exampleOrganizations.find((org) => org.id === selectedOrg)
-                      ?.state
-                  }{" "}
-                  {
-                    exampleOrganizations.find((org) => org.id === selectedOrg)
+                    organizations.find((org) => org.id === selectedOrg)
                       ?.postalCode
                   }
                 </p>
