@@ -37,15 +37,17 @@ const createOrgSchema = z.object({
 });
 
 export default function OrganizationPage() {
-  const [open, setOpen] = useState(false);
   const [admin] = useAtom(adminAtom);
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedOrg, setSelectedOrg] = useState<number | null>(null);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrg, setSelectedOrg] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const [isFetching, setIsFetching] = useState(true);
   const [fetchError, setFetchError] = useState("");
+
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [currentOrganization, setCurrentOrganization] =
     useState<Organization | null>(null);
 
@@ -61,13 +63,23 @@ export default function OrganizationPage() {
   });
 
   useEffect(() => {
-    fetchOrganizations();
-  }, []);
+    const initializeData = async () => {
+      setIsLoading(true);
+      try {
+        if (admin?.organizationId) {
+          await fetchCurrentOrganization(admin.organizationId);
+        } else {
+          await fetchOrganizations();
+        }
+      } catch (error) {
+        console.error("Initialization error:", error);
+        setError("Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (admin?.organizationId) {
-      fetchCurrentOrganization(admin.organizationId);
-    }
+    initializeData();
   }, [admin?.organizationId]);
 
   async function fetchCurrentOrganization(orgId: number) {
@@ -80,6 +92,7 @@ export default function OrganizationPage() {
       setCurrentOrganization(data.data);
     } catch (error) {
       console.error("Error fetching organization details:", error);
+      throw error;
     }
   }
 
@@ -97,18 +110,19 @@ export default function OrganizationPage() {
     } catch (error) {
       setFetchError("Failed to load organizations");
       console.error("Fetch error:", error);
+      throw error;
     } finally {
       setIsFetching(false);
     }
   }
 
   async function onJoinOrg(selectedOrg: number) {
-    if (!selectedOrg) return;
+    if (!selectedOrg || !admin?.id) return;
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/admin/update?id=${admin?.id}`, {
+      const response = await fetch(`/api/admin/update?id=${admin.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -123,6 +137,8 @@ export default function OrganizationPage() {
         console.log(error, message);
         throw new Error("Failed to join");
       }
+
+      await fetchCurrentOrganization(selectedOrg);
     } catch (error) {
       setError("Failed to join organization");
       console.error(error);
@@ -141,12 +157,7 @@ export default function OrganizationPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: values.name,
-          street: values.street,
-          postalCode: values.postalCode,
-          city: values.city,
-        }),
+        body: JSON.stringify(values),
       });
 
       if (!response.ok) {
@@ -162,6 +173,27 @@ export default function OrganizationPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-6 pb-16">
+        <div className="space-y-0.5">
+          <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 p-6 pb-16">
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   if (admin?.organizationId && currentOrganization) {
@@ -194,6 +226,10 @@ export default function OrganizationPage() {
                 </h3>
                 <div className="text-sm text-muted-foreground">
                   <p>{currentOrganization.street}</p>
+                  {/* <p>
+                    {currentOrganization.city}, {currentOrganization.state}{" "}
+                    {currentOrganization.postalCode}
+                  </p> */}
                 </div>
               </div>
               <Alert>
@@ -212,14 +248,6 @@ export default function OrganizationPage() {
 
   return (
     <div className="space-y-6 p-6 pb-16">
-      <div className="space-y-0.5">
-        <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
-        <p className="text-muted-foreground">
-          Join an existing organization or create a new one to start managing
-          fundraisers
-        </p>
-      </div>
-
       <Tabs defaultValue="join" className="space-y-6">
         <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="join">Join Organization</TabsTrigger>
