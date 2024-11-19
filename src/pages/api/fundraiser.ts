@@ -25,11 +25,6 @@ type ResponseData = {
   error?: string;
 };
 
-// Helper function to format date to ISO string
-const formatDate = (date: Date): string => {
-  return date.toISOString();
-};
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
@@ -49,6 +44,14 @@ export default async function handler(
     default:
       return res.status(405).json({ message: "Method not allowed" });
   }
+}
+
+function handleDates(dateStr: string | null) {
+  const today = new Date().toISOString().split("T")[0];
+  return {
+    forValidation: new Date((dateStr || today) + "T00:00:00.000Z"),
+    forStorage: dateStr || today,
+  };
 }
 
 async function getFundraisers(
@@ -128,28 +131,33 @@ async function createFundraiser(
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
-    
-    // Validate required fields
-    if (!body.title || !body.description || !body.startDate || !body.endDate || !body.organizationId || !body.adminId) {
+
+    if (
+      !body.title ||
+      !body.description ||
+      !body.startDate ||
+      !body.endDate ||
+      !body.organizationId ||
+      !body.adminId
+    ) {
       return res.status(400).json({
         message: "Validation failed",
         error: "Missing required fields",
       });
     }
 
-    // Validate dates
-    const start = new Date(body.startDate);
-    const end = new Date(body.endDate);
-    const now = new Date();
+    const start = handleDates(body.startDate);
+    const end = handleDates(body.endDate);
+    const today = handleDates(new Date().toISOString().split("T")[0]);
 
-    if (start <= now) {
+    if (start.forValidation < today.forValidation) {
       return res.status(400).json({
         message: "Validation failed",
-        error: "Start date must be in the future",
+        error: "Start date can't be in the past",
       });
     }
 
-    if (end <= start) {
+    if (end.forValidation <= start.forValidation) {
       return res.status(400).json({
         message: "Validation failed",
         error: "End date must be after start date",
@@ -159,8 +167,8 @@ async function createFundraiser(
     const newFundraiserData: NewFundraiser = {
       title: body.title,
       description: body.description,
-      startDate: formatDate(start),
-      endDate: formatDate(end),
+      startDate: start.forStorage,
+      endDate: end.forStorage,
       organizationId: body.organizationId,
       adminId: body.adminId,
     };
@@ -170,9 +178,19 @@ async function createFundraiser(
       .values(newFundraiserData)
       .returning();
 
+    // Format dates in the response
+    const formattedFundraiser = {
+      ...newFundraiser,
+      startDate: newFundraiser.startDate,
+      endDate: newFundraiser.endDate,
+      isActive:
+        start.forValidation <= today.forValidation &&
+        end.forValidation >= today.forValidation,
+    };
+
     return res.status(201).json({
       message: "Fundraiser created successfully",
-      data: newFundraiser,
+      data: formattedFundraiser,
     });
   } catch (error) {
     console.error("Create fundraiser error:", error);
@@ -189,7 +207,6 @@ async function updateFundraiser(
 ) {
   try {
     const { id } = req.query;
-    
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
@@ -198,8 +215,6 @@ async function updateFundraiser(
     }
 
     const updateData = req.body as UpdateFundraiserBody;
-
-    // Check if fundraiser exists
     const [existingFundraiser] = await db
       .select()
       .from(fundraisers)
@@ -211,20 +226,40 @@ async function updateFundraiser(
       });
     }
 
-    // Prepare update data with date conversions
     const updateValues: Partial<NewFundraiser> = {};
-    
+    const now = new Date();
+
     if (updateData.title) updateValues.title = updateData.title;
-    if (updateData.description) updateValues.description = updateData.description;
+    if (updateData.description)
+      updateValues.description = updateData.description;
+    if (updateData.organizationId)
+      updateValues.organizationId = updateData.organizationId;
+
     if (updateData.startDate) {
-      const startDate = new Date(updateData.startDate);
-      updateValues.startDate = formatDate(startDate);
+      const newStart = new Date(updateData.startDate);
+      if (newStart < now) {
+        return res.status(400).json({
+          message: "Validation failed",
+          error: "Start date can't be in the past",
+        });
+      }
+      updateValues.startDate = updateData.startDate;
     }
+
     if (updateData.endDate) {
-      const endDate = new Date(updateData.endDate);
-      updateValues.endDate = formatDate(endDate);
+      const newEnd = new Date(updateData.endDate);
+      const startToCheck = updateData.startDate
+        ? new Date(updateData.startDate)
+        : new Date(existingFundraiser.startDate!);
+
+      if (newEnd <= startToCheck) {
+        return res.status(400).json({
+          message: "Validation failed",
+          error: "End date must be after start date",
+        });
+      }
+      updateValues.endDate = updateData.endDate;
     }
-    if (updateData.organizationId) updateValues.organizationId = updateData.organizationId;
 
     const [updatedFundraiser] = await db
       .update(fundraisers)
