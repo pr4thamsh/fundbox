@@ -82,6 +82,7 @@ async function updateAdmin(
       .update(admins)
       .set({
         ...updateValues,
+        updated_at: new Date(),
       })
       .where(eq(admins.id, id))
       .returning();

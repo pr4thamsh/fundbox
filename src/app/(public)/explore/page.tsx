@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Clock, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -21,52 +21,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Fundraiser } from "@/db/schema/fundraisers";
 
-// Example fundraiser data
-const exampleFundraisers = [
-  {
-    id: 1,
-    title: "Clean Ocean Initiative",
-    description:
-      "Help us clean the oceans and protect marine life. Every donation counts towards making our oceans cleaner and safer for all.",
-    startDate: "2024-11-01",
-    endDate: "2024-12-31",
-    organizationId: 1,
-    organizationName: "Ocean Conservation Society",
-    totalRaised: 15000,
-    ticketsSold: 124,
-  },
-  {
-    id: 2,
-    title: "Education for All",
-    description:
-      "Support underprivileged children's education. Provide books, supplies, and learning resources to those who need them most.",
-    startDate: "2024-11-15",
-    endDate: "2025-01-15",
-    organizationId: 2,
-    organizationName: "Future Bright Foundation",
-    totalRaised: 28000,
-    ticketsSold: 230,
-  },
-  {
-    id: 3,
-    title: "Green Energy Project",
-    description:
-      "Help us install solar panels in rural communities. Bringing sustainable energy to those who need it most.",
-    startDate: "2024-11-10",
-    endDate: "2025-02-28",
-    organizationId: 3,
-    organizationName: "Sustainable Future",
-    totalRaised: 45000,
-    ticketsSold: 312,
-  },
-];
-
-// Function to format currency
-function formatCurrency(amount: number) {
+function formatCurrency(amount: number | null) {
+  if (amount === null) return "CAD $0";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "CAD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -75,32 +36,71 @@ function formatCurrency(amount: number) {
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const [fundraisers, setFundraisers] = useState<Fundraiser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter fundraisers based on search query
-  const filteredFundraisers = exampleFundraisers.filter(
+  useEffect(() => {
+    console.log(new Date().toLocaleDateString("en-CA"));
+
+    const fetchActiveFundraisers = async () => {
+      try {
+        const response = await fetch("/api/fundraiser?active=true");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch fundraisers");
+        }
+
+        setFundraisers(data.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActiveFundraisers();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <p>Loading fundraisers...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center text-red-500">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
+  const filteredFundraisers = fundraisers.filter(
     (fundraiser) =>
-      fundraiser.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fundraiser.description
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      fundraiser.organizationName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()),
+      fundraiser.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      fundraiser.description?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  // Sort fundraisers based on selected option
   const sortedFundraisers = [...filteredFundraisers].sort((a, b) => {
     switch (sortBy) {
       case "recent":
         return (
-          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          new Date(b.startDate || "").getTime() -
+          new Date(a.startDate || "").getTime()
         );
       case "endingSoon":
-        return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+        return (
+          new Date(a.endDate || "").getTime() -
+          new Date(b.endDate || "").getTime()
+        );
       case "mostRaised":
-        return b.totalRaised - a.totalRaised;
+        return (b.fundRaised || 0) - (a.fundRaised || 0);
       case "mostTickets":
-        return b.ticketsSold - a.ticketsSold;
+        return (b.ticketsSold || 0) - (a.ticketsSold || 0);
       default:
         return 0;
     }
@@ -111,10 +111,10 @@ export default function ExplorePage() {
       {/* Header Section */}
       <div className="space-y-2 mb-8">
         <h1 className="text-3xl font-bold tracking-tight">
-          Explore Fundraisers
+          Active Fundraisers
         </h1>
         <p className="text-muted-foreground">
-          Discover and support meaningful causes in your community
+          Discover and support ongoing fundraisers in your community
         </p>
       </div>
 
@@ -145,7 +145,7 @@ export default function ExplorePage() {
       {/* Fundraisers Grid */}
       {sortedFundraisers.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No fundraisers found</p>
+          <p className="text-muted-foreground">No active fundraisers found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -163,7 +163,7 @@ export default function ExplorePage() {
                         {fundraiser.title}
                       </CardTitle>
                       <CardDescription className="text-sm">
-                        by {fundraiser.organizationName}
+                        by Organization {fundraiser.organizationId}
                       </CardDescription>
                     </div>
                     <Badge variant="secondary" className="ml-2">
@@ -176,18 +176,22 @@ export default function ExplorePage() {
                     {fundraiser.description}
                   </p>
                   <div className="text-sm font-medium">
-                    Funds Raised: {formatCurrency(fundraiser.totalRaised)}
+                    Funds Raised: {formatCurrency(fundraiser.fundRaised || 0)}
                   </div>
                 </CardContent>
                 <CardFooter className="border-t pt-6">
                   <div className="flex justify-between items-center w-full text-sm">
                     <div className="flex items-center text-muted-foreground">
                       <Ticket className="mr-1 h-4 w-4" />
-                      {fundraiser.ticketsSold.toLocaleString()} tickets sold
+                      {(fundraiser.ticketsSold || 0).toLocaleString()} tickets
+                      sold
                     </div>
                     <div className="flex items-center text-muted-foreground">
                       <Clock className="mr-1 h-4 w-4" />
-                      {format(new Date(fundraiser.endDate), "MMM d, yyyy")}
+                      {format(
+                        new Date(fundraiser.endDate || ""),
+                        "MMM d, yyyy",
+                      )}
                     </div>
                   </div>
                 </CardFooter>

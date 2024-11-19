@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import {
   type Fundraiser,
   type NewFundraiser,
+  activeFundraisersView,
   fundraisers,
 } from "@/db/schema/fundraisers";
 
@@ -26,7 +27,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -46,7 +47,6 @@ export default async function handler(
 }
 
 function handleDates(dateStr: string | null) {
-  // Get today's date in local timezone
   if (!dateStr) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -56,9 +56,8 @@ function handleDates(dateStr: string | null) {
     };
   }
 
-  // Handle input date
   const [year, month, day] = dateStr.split("-").map(Number);
-  const date = new Date(year, month - 1, day); // Create date in local timezone
+  const date = new Date(year, month - 1, day);
   date.setHours(0, 0, 0, 0);
 
   return {
@@ -69,20 +68,24 @@ function handleDates(dateStr: string | null) {
 
 async function getFundraisers(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
-    const { organizationId } = req.query;
+    const { organizationId, active } = req.query;
 
     let result: Fundraiser[];
 
-    if (organizationId) {
-      result = await db
-        .select()
-        .from(fundraisers)
-        .where(eq(fundraisers.organizationId, Number(organizationId)));
+    if (active === "true") {
+      result = await db.select().from(activeFundraisersView);
     } else {
-      result = await db.select().from(fundraisers);
+      if (organizationId) {
+        result = await db
+          .select()
+          .from(fundraisers)
+          .where(eq(fundraisers.organizationId, Number(organizationId)));
+      } else {
+        result = await db.select().from(fundraisers);
+      }
     }
 
     return res.status(200).json({
@@ -100,7 +103,7 @@ async function getFundraisers(
 
 async function getFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -138,7 +141,7 @@ async function getFundraiser(
 
 async function createFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
@@ -205,7 +208,7 @@ async function createFundraiser(
 
 async function updateFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -288,7 +291,7 @@ async function updateFundraiser(
 
 async function deleteFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
