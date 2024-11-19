@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
-import { fundraisers } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
-
-// Define types based on schema
-type Fundraiser = InferSelectModel<typeof fundraisers>;
-type NewFundraiser = InferInsertModel<typeof fundraisers>;
+import {
+  type Fundraiser,
+  type NewFundraiser,
+  fundraisers,
+} from "@/db/schema/fundraisers";
 
 type CreateFundraiserBody = {
   title: string;
@@ -17,7 +16,7 @@ type CreateFundraiserBody = {
   adminId: string;
 };
 
-type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, 'adminId'>>;
+type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, "adminId">>;
 
 type ResponseData = {
   message: string;
@@ -27,7 +26,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -56,11 +55,11 @@ function handleDates(dateStr: string | null) {
 
 async function getFundraisers(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { organizationId } = req.query;
-    
+
     let result: Fundraiser[];
 
     if (organizationId) {
@@ -69,9 +68,7 @@ async function getFundraisers(
         .from(fundraisers)
         .where(eq(fundraisers.organizationId, Number(organizationId)));
     } else {
-      result = await db
-        .select()
-        .from(fundraisers);
+      result = await db.select().from(fundraisers);
     }
 
     return res.status(200).json({
@@ -89,15 +86,15 @@ async function getFundraisers(
 
 async function getFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
-    
+
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -127,7 +124,7 @@ async function getFundraiser(
 
 async function createFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
@@ -203,14 +200,14 @@ async function createFundraiser(
 
 async function updateFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -282,15 +279,15 @@ async function updateFundraiser(
 
 async function deleteFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
-    
+
     if (!id || Array.isArray(id)) {
       return res.status(400).json({
         message: "Invalid fundraiser ID",
-        error: "ID must be a single value"
+        error: "ID must be a single value",
       });
     }
 
@@ -306,9 +303,7 @@ async function deleteFundraiser(
       });
     }
 
-    await db
-      .delete(fundraisers)
-      .where(eq(fundraisers.id, Number(id)));
+    await db.delete(fundraisers).where(eq(fundraisers.id, Number(id)));
 
     return res.status(200).json({
       message: "Fundraiser deleted successfully",
