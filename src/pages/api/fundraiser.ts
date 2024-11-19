@@ -7,6 +7,8 @@ import {
   activeFundraisersView,
   fundraisers,
 } from "@/db/schema/fundraisers";
+import { organizations } from "@/db/schema/organization";
+import { type Organization } from "@/db/schema/organization";
 
 type CreateFundraiserBody = {
   title: string;
@@ -15,13 +17,27 @@ type CreateFundraiserBody = {
   endDate: string;
   organizationId: number;
   adminId: string;
+  pricePerTicket: number;
+};
+
+type FundraiserWithOrg = {
+  id: number;
+  title: string | null;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  ticketsSold: number | null;
+  fundRaised: number | null;
+  organizationId: number | null;
+  adminId: string | null;
+  organization: Organization;
 };
 
 type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, "adminId">>;
 
 type ResponseData = {
   message: string;
-  data?: Fundraiser | Fundraiser[];
+  data?: Fundraiser | Fundraiser[] | FundraiserWithOrg;
   error?: string;
 };
 
@@ -115,12 +131,27 @@ async function getFundraiser(
       });
     }
 
-    const [fundraiser] = await db
-      .select()
+    const [result] = await db
+      .select({
+        id: fundraisers.id,
+        title: fundraisers.title,
+        description: fundraisers.description,
+        startDate: fundraisers.startDate,
+        endDate: fundraisers.endDate,
+        ticketsSold: fundraisers.ticketsSold,
+        fundRaised: fundraisers.fundRaised,
+        organizationId: fundraisers.organizationId,
+        adminId: fundraisers.adminId,
+        organization: organizations,
+      })
       .from(fundraisers)
+      .innerJoin(
+        organizations,
+        eq(fundraisers.organizationId, organizations.id),
+      )
       .where(eq(fundraisers.id, Number(id)));
 
-    if (!fundraiser) {
+    if (!result) {
       return res.status(404).json({
         message: "Fundraiser not found",
       });
@@ -128,7 +159,7 @@ async function getFundraiser(
 
     return res.status(200).json({
       message: "Fundraiser retrieved successfully",
-      data: fundraiser,
+      data: result,
     });
   } catch (error) {
     console.error("Get fundraiser error:", error);
@@ -186,6 +217,7 @@ async function createFundraiser(
       endDate: body.endDate,
       organizationId: body.organizationId,
       adminId: body.adminId,
+      pricePerTicket: body.pricePerTicket,
     };
 
     const [newFundraiser] = await db
@@ -239,7 +271,6 @@ async function updateFundraiser(
     if (updateData.organizationId)
       updateValues.organizationId = updateData.organizationId;
 
-    // Use the same date handling for updates
     if (updateData.startDate) {
       const today = handleDates(null);
       const newStart = handleDates(updateData.startDate);
@@ -303,7 +334,6 @@ async function deleteFundraiser(
       });
     }
 
-    // Check if fundraiser exists
     const [existingFundraiser] = await db
       .select()
       .from(fundraisers)

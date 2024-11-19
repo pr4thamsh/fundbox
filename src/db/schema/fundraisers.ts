@@ -29,6 +29,7 @@ export const fundraisers = table("fundraisers", {
   fundRaised: integer(),
   organizationId: integer("organization_id").references(() => organizations.id),
   adminId: text("admin_id").references(() => admins.id),
+  pricePerTicket: integer("price_per_ticket"),
   ...timestamps,
 });
 
@@ -42,6 +43,7 @@ export const activeFundraisersView = pgView("active_fundraisers_view", {
   fundRaised: integer(),
   organizationId: integer("organization_id"),
   adminId: text("admin_id"),
+  pricePerTicket: integer("price_per_ticket"),
   ...timestamps,
 }).as(
   sql`
