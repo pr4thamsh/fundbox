@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
+import { useAtom } from "jotai";
+import { adminAtom } from "@/store/admin";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ const navigation = [{ name: "Explore", href: "/explore" }];
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const [admin] = useAtom(adminAtom);
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClientComponentClient();
 
@@ -65,7 +66,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-4">
             <ModeToggle />
-            {user ? (
+            {admin ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -79,14 +80,14 @@ export function Navbar() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      {user.user_metadata?.full_name && (
+                      {admin.firstName && admin.lastName && (
                         <p className="font-medium truncate">
-                          {user.user_metadata.full_name}
+                          {admin.firstName} {admin.lastName}
                         </p>
                       )}
-                      {user.email && (
+                      {admin.email && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {user.email}
+                          {admin.email}
                         </p>
                       )}
                     </div>

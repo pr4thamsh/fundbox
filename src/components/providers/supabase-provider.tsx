@@ -1,11 +1,10 @@
 "use client";
 
-import { Admin } from "@/db/schema/admins";
-import { adminAtom, isLoadingAtom } from "@/store/admin";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAtom } from "jotai";
+import { adminAtom } from "@/store/admin";
 
 const SupabaseContext = createContext({});
 
@@ -17,7 +16,6 @@ export const SupabaseProvider = ({
   const [supabase] = useState(() => createClientComponentClient());
   const router = useRouter();
   const [, setAdmin] = useAtom(adminAtom);
-  const [, setIsLoading] = useAtom(isLoadingAtom);
 
   const getAdmin = async (email: string) => {
     try {
@@ -26,21 +24,18 @@ export const SupabaseProvider = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-        }),
+        body: JSON.stringify({ email }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to login");
+        throw new Error("Failed to fetch admin data");
       }
 
-      const adminData = await response.json();
-      return adminData as Admin;
-    } catch (apiError) {
-      console.error("❌ API Error:", apiError);
-      throw apiError;
+      const { admin } = await response.json();
+      return admin;
+    } catch (error) {
+      console.error("❌ Failed to fetch admin:", error);
+      return null;
     }
   };
 
@@ -48,29 +43,47 @@ export const SupabaseProvider = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      router.refresh();
+      if (event === "SIGNED_OUT") {
+        setAdmin(null);
+        return;
+      }
 
-      setIsLoading(true);
-      try {
-        if (session?.user?.email) {
+      if (session?.user?.email) {
+        try {
           const adminData = await getAdmin(session.user.email);
-          console.log("✅ Admin Data:", adminData);
           setAdmin(adminData);
-        } else {
+        } catch (error) {
+          console.error("💥 Auth state change error:", error);
           setAdmin(null);
         }
-      } catch (error) {
-        console.error("Failed to fetch admin data:", error);
+      } else {
         setAdmin(null);
-      } finally {
-        setIsLoading(false);
       }
+
+      router.refresh();
     });
+
+    const initializeAdmin = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        try {
+          const adminData = await getAdmin(session.user.email);
+          setAdmin(adminData);
+        } catch (error) {
+          console.error("🚨 Failed to initialize admin:", error);
+          setAdmin(null);
+        }
+      }
+    };
+
+    initializeAdmin();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, supabase, setAdmin, setIsLoading]);
+  }, [router, supabase, setAdmin]);
 
   return (
     <SupabaseContext.Provider value={{ supabase }}>
