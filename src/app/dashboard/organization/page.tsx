@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Search } from "lucide-react";
+import { Search, Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-type Organization = {
-  id: number;
-  name: string;
-  street: string;
-  postalCode: string;
-};
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Organization } from "@/db/schema/organization";
+import { useAtom } from "jotai";
+import { adminAtom } from "@/store/admin";
 
 const createOrgSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -35,6 +38,7 @@ const createOrgSchema = z.object({
 
 export default function OrganizationPage() {
   const [open, setOpen] = useState(false);
+  const [admin] = useAtom(adminAtom);
   const [searchValue, setSearchValue] = useState("");
   const [selectedOrg, setSelectedOrg] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -42,6 +46,8 @@ export default function OrganizationPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [currentOrganization, setCurrentOrganization] =
+    useState<Organization | null>(null);
 
   const form = useForm<z.infer<typeof createOrgSchema>>({
     resolver: zodResolver(createOrgSchema),
@@ -57,6 +63,25 @@ export default function OrganizationPage() {
   useEffect(() => {
     fetchOrganizations();
   }, []);
+
+  useEffect(() => {
+    if (admin?.organizationId) {
+      fetchCurrentOrganization(admin.organizationId);
+    }
+  }, [admin?.organizationId]);
+
+  async function fetchCurrentOrganization(orgId: number) {
+    try {
+      const response = await fetch(`/api/organization?id=${orgId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch organization details");
+      }
+      const data = await response.json();
+      setCurrentOrganization(data.data);
+    } catch (error) {
+      console.error("Error fetching organization details:", error);
+    }
+  }
 
   async function fetchOrganizations() {
     setIsFetching(true);
@@ -77,14 +102,27 @@ export default function OrganizationPage() {
     }
   }
 
-  async function onJoinOrg() {
+  async function onJoinOrg(selectedOrg: number) {
     if (!selectedOrg) return;
     setIsLoading(true);
     setError("");
 
     try {
-      console.log("Joining organization:", selectedOrg);
-      // Implement join organization logic here
+      const response = await fetch(`/api/admin/update?id=${admin?.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organizationId: selectedOrg,
+        }),
+      });
+
+      if (!response.ok) {
+        const { message, error } = await response.json();
+        console.log(error, message);
+        throw new Error("Failed to join");
+      }
     } catch (error) {
       setError("Failed to join organization");
       console.error(error);
@@ -107,14 +145,16 @@ export default function OrganizationPage() {
           name: values.name,
           street: values.street,
           postalCode: values.postalCode,
+          city: values.city,
         }),
       });
 
       if (!response.ok) {
         throw new Error("Failed to create organization");
       }
+      const { data } = await response.json();
 
-      await fetchOrganizations();
+      await onJoinOrg(data.id);
       form.reset();
     } catch (error) {
       setError("Failed to create organization");
@@ -122,6 +162,52 @@ export default function OrganizationPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (admin?.organizationId && currentOrganization) {
+    return (
+      <div className="space-y-6 p-6 pb-16">
+        <div className="space-y-0.5">
+          <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
+          <p className="text-muted-foreground">
+            Your current organization details and membership information
+          </p>
+        </div>
+
+        <Card className="w-full">
+          <CardHeader>
+            <div className="flex items-center space-x-3">
+              <Building2 className="h-6 w-6 text-primary" />
+              <div>
+                <CardTitle>Current Organization</CardTitle>
+                <CardDescription>
+                  You are a member of this organization
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">
+                  {currentOrganization.name}
+                </h3>
+                <div className="text-sm text-muted-foreground">
+                  <p>{currentOrganization.street}</p>
+                </div>
+              </div>
+              <Alert>
+                <AlertDescription>
+                  You are currently an active member of{" "}
+                  {currentOrganization.name}. If you need to change
+                  organizations, please contact your administrator.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -186,7 +272,9 @@ export default function OrganizationPage() {
                 <div className="max-h-64 overflow-y-auto p-2">
                   {organizations
                     .filter((org) =>
-                      org.name.toLowerCase().includes(searchValue.toLowerCase())
+                      org.name
+                        .toLowerCase()
+                        .includes(searchValue.toLowerCase()),
                     )
                     .map((org) => (
                       <div
@@ -202,7 +290,7 @@ export default function OrganizationPage() {
                       </div>
                     ))}
                   {organizations.filter((org) =>
-                    org.name.toLowerCase().includes(searchValue.toLowerCase())
+                    org.name.toLowerCase().includes(searchValue.toLowerCase()),
                   ).length === 0 && (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                       No organizations found.
@@ -229,7 +317,7 @@ export default function OrganizationPage() {
               </div>
               <Button
                 className="w-full"
-                onClick={onJoinOrg}
+                onClick={() => onJoinOrg(selectedOrg)}
                 disabled={isLoading}
               >
                 {isLoading ? "Joining..." : "Join Organization"}

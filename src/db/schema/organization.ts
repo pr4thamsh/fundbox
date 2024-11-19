@@ -4,9 +4,9 @@ import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
 export const organizations = table("organizations", {
   id: serial().primaryKey(),
-  name: varchar({ length: 256 }),
-  street: varchar(),
-  postalCode: varchar("postal_code"),
+  name: varchar({ length: 256 }).notNull(),
+  street: varchar().notNull(),
+  postalCode: varchar("postal_code").notNull(),
   ...timestamps,
 });
 
