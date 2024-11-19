@@ -68,34 +68,6 @@ export default function LoginPage() {
       });
 
       if (authError) throw authError;
-
-      if (data.user) {
-        try {
-          const response = await fetch("/api/admin/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: values.email,
-            }),
-          });
-
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || "Failed to login");
-          }
-
-          const adminData = await response.json();
-          console.log("✅ Admin Data:", adminData);
-
-          router.refresh();
-          router.push("/dashboard");
-        } catch (apiError) {
-          console.error("❌ API Error:", apiError);
-          throw apiError;
-        }
-      }
     } catch (error) {
       console.error("❌ Login Error:", error);
       setError("Invalid email or password");

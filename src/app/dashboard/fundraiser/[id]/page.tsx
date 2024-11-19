@@ -1,4 +1,3 @@
-// src/app/dashboard/fundraiser/[id]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -22,16 +21,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  CalendarDays, 
-  Users, 
-  DollarSign, 
+import {
+  CalendarDays,
+  Users,
+  DollarSign,
   Timer,
   ArrowLeft,
   Pencil,
   Trash2,
   Save,
-  X
+  X,
 } from "lucide-react";
 
 type Fundraiser = {
@@ -58,7 +57,7 @@ export default function FundraiserPage() {
     title: "",
     description: "",
     startDate: "",
-    endDate: ""
+    endDate: "",
   });
 
   useEffect(() => {
@@ -67,16 +66,18 @@ export default function FundraiserPage() {
         const response = await fetch(`/api/fundraiser?id=${params.id}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
-        
+
         setFundraiser(data.data);
         setFormData({
           title: data.data.title,
           description: data.data.description,
           startDate: data.data.startDate,
-          endDate: data.data.endDate
+          endDate: data.data.endDate,
         });
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Failed to fetch fundraiser");
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch fundraiser",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -87,11 +88,13 @@ export default function FundraiserPage() {
     }
   }, [params.id]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -113,11 +116,13 @@ export default function FundraiserPage() {
       setFundraiser(data.data);
       setIsEditing(false);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to update fundraiser");
+      setError(
+        error instanceof Error ? error.message : "Failed to update fundraiser",
+      );
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   async function handleDelete() {
     if (deleteConfirmation !== fundraiser?.title) {
@@ -137,7 +142,9 @@ export default function FundraiserPage() {
 
       router.push("/dashboard");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to delete fundraiser");
+      setError(
+        error instanceof Error ? error.message : "Failed to delete fundraiser",
+      );
     } finally {
       setIsLoading(false);
       setIsDeleteDialogOpen(false);
@@ -146,24 +153,29 @@ export default function FundraiserPage() {
 
   const fixDate = (dateString: string | null) => {
     if (!dateString) return new Date();
-    const [year, month, day] = dateString.split('-').map(Number);
+    const [year, month, day] = dateString.split("-").map(Number);
     const date = new Date(year, month - 1, day);
     return date;
   };
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
   if (!fundraiser) return <div>Fundraiser not found</div>;
 
-  const isActive = 
+  const isActive =
     fixDate(fundraiser.startDate) <= new Date() &&
     fixDate(fundraiser.endDate) >= new Date();
 
   return (
     <div className="space-y-6 p-6 pb-16">
       <div className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.back()}
           className="flex items-center space-x-2"
         >
@@ -186,10 +198,12 @@ export default function FundraiserPage() {
                 fundraiser and all of its data.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <p className="text-sm text-muted-foreground">
-                Please type <span className="font-semibold">{fundraiser.title}</span> to confirm.
+                Please type{" "}
+                <span className="font-semibold">{fundraiser.title}</span> to
+                confirm.
               </p>
               <Input
                 value={deleteConfirmation}
@@ -205,7 +219,9 @@ export default function FundraiserPage() {
                 onClick={handleDelete}
                 disabled={deleteConfirmation !== fundraiser.title || isLoading}
               >
-                {isLoading ? "Deleting..." : "I understand, delete this fundraiser"}
+                {isLoading
+                  ? "Deleting..."
+                  : "I understand, delete this fundraiser"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -255,16 +271,16 @@ export default function FundraiserPage() {
                       <Save className="h-4 w-4 mr-2" />
                       {isLoading ? "Saving..." : "Save Changes"}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => {
                         setIsEditing(false);
                         setFormData({
                           title: fundraiser.title,
                           description: fundraiser.description,
                           startDate: fundraiser.startDate,
-                          endDate: fundraiser.endDate
+                          endDate: fundraiser.endDate,
                         });
                       }}
                     >
@@ -276,9 +292,11 @@ export default function FundraiserPage() {
               ) : (
                 <>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-2xl">{fundraiser.title}</CardTitle>
-                    <Button 
-                      variant="ghost" 
+                    <CardTitle className="text-2xl">
+                      {fundraiser.title}
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => setIsEditing(true)}
                     >
@@ -304,7 +322,9 @@ export default function FundraiserPage() {
               <div className="flex items-center space-x-2">
                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
                 <span className="text-muted-foreground">Start Date:</span>
-                <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
+                <span>
+                  {fixDate(fundraiser.startDate).toLocaleDateString()}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Timer className="h-5 w-5 text-muted-foreground" />

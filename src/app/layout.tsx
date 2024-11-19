@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SupabaseProvider } from "@/components/providers/supabase-provider";
+import { Provider as JotaiProvider } from "jotai";
 
 export const metadata: Metadata = {
   title: "FundBox - Fundraiser Manager",
@@ -23,11 +24,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SupabaseProvider>
-            <main className="relative flex min-h-screen flex-col">
-              {children}
-            </main>
-          </SupabaseProvider>
+          <JotaiProvider>
+            <SupabaseProvider>
+              <main className="relative flex min-h-screen flex-col">
+                {children}
+              </main>
+            </SupabaseProvider>
+          </JotaiProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -21,8 +21,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAtom } from "jotai";
+import { adminAtom } from "@/store/admin";
 
 type Fundraiser = {
   id: number;
@@ -36,7 +37,7 @@ type Fundraiser = {
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const [admin] = useAtom(adminAtom);
   const router = useRouter();
   const [fundraisers, setFundraisers] = useState<Fundraiser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,19 +48,21 @@ export default function DashboardPage() {
     description: "",
     startDate: "",
     endDate: "",
-    organizationId: 1,
-    adminId: user?.id
+    organizationId: admin?.organizationId,
+    adminId: admin?.id,
   });
 
   useEffect(() => {
     fetchFundraisers();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -70,7 +73,7 @@ export default function DashboardPage() {
 
     const submitData = {
       ...formData,
-      adminId: user?.id
+      adminId: admin?.id,
     };
 
     try {
@@ -93,11 +96,12 @@ export default function DashboardPage() {
         startDate: "",
         endDate: "",
         organizationId: 1,
-        adminId: user?.id
+        adminId: admin?.id,
       });
-
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to create fundraiser");
+      setError(
+        error instanceof Error ? error.message : "Failed to create fundraiser",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -121,13 +125,17 @@ export default function DashboardPage() {
     <div className="space-y-6 p-6 pb-16">
       <div className="flex justify-between items-center">
         <div className="space-y-0.5">
-          <h2 className="text-2xl font-bold tracking-tight">Welcome, {user?.user_metadata.first_name}!</h2>
-          <p className="text-muted-foreground">Manage your fundraising campaigns and track their progress</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Welcome, {admin?.firstName}!
+          </h2>
+          <p className="text-muted-foreground">
+            Manage your fundraising campaigns and track their progress
+          </p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!admin?.organizationId}>
               <Plus className="mr-2 h-4 w-4" />
               Create Fundraiser
             </Button>
@@ -148,7 +156,9 @@ export default function DashboardPage() {
               )}
 
               <div className="space-y-2">
-                <label htmlFor="title" className="text-sm font-medium">Title</label>
+                <label htmlFor="title" className="text-sm font-medium">
+                  Title
+                </label>
                 <Input
                   id="title"
                   name="title"
@@ -160,7 +170,9 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium">Description</label>
+                <label htmlFor="description" className="text-sm font-medium">
+                  Description
+                </label>
                 <Input
                   id="description"
                   name="description"
@@ -173,7 +185,9 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="startDate" className="text-sm font-medium">Start Date</label>
+                  <label htmlFor="startDate" className="text-sm font-medium">
+                    Start Date
+                  </label>
                   <Input
                     id="startDate"
                     name="startDate"
@@ -185,7 +199,9 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="endDate" className="text-sm font-medium">End Date</label>
+                  <label htmlFor="endDate" className="text-sm font-medium">
+                    End Date
+                  </label>
                   <Input
                     id="endDate"
                     name="endDate"
@@ -209,7 +225,7 @@ export default function DashboardPage() {
         {fundraisers.map((fundraiser) => {
           const fixDate = (dateString: string | null) => {
             if (!dateString) return new Date();
-            const [year, month, day] = dateString.split('-').map(Number);
+            const [year, month, day] = dateString.split("-").map(Number);
             const date = new Date(year, month - 1, day);
             return date;
           };
@@ -227,7 +243,9 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex justify-between items-start space-x-4">
                   <div>
-                    <CardTitle className="text-xl">{fundraiser.title}</CardTitle>
+                    <CardTitle className="text-xl">
+                      {fundraiser.title}
+                    </CardTitle>
                     <CardDescription className="mt-2 line-clamp-2">
                       {fundraiser.description}
                     </CardDescription>
@@ -244,12 +262,16 @@ export default function DashboardPage() {
                   <div className="flex items-center space-x-2 text-sm">
                     <CalendarDays className="h-5 w-5 text-muted-foreground" />
                     <span className="text-muted-foreground">Start:</span>
-                    <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
+                    <span>
+                      {fixDate(fundraiser.startDate).toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm">
                     <Timer className="h-5 w-5 text-muted-foreground" />
                     <span className="text-muted-foreground">End:</span>
-                    <span>{fixDate(fundraiser.endDate).toLocaleDateString()}</span>
+                    <span>
+                      {fixDate(fundraiser.endDate).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
