@@ -34,10 +34,12 @@ export default function FundraiserPage() {
         const response = await fetch(`/api/fundraiser?id=${params.id}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
-        
+
         setFundraiser(data.data);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Failed to fetch fundraiser");
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch fundraiser",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -49,14 +51,19 @@ export default function FundraiserPage() {
   }, [params.id]);
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
+  if (error)
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
   if (!fundraiser) return <div>Fundraiser not found</div>;
 
   return (
     <div className="space-y-6 p-6 pb-16">
       <div className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.back()}
           className="flex items-center space-x-2"
         >

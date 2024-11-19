@@ -35,17 +35,6 @@ export function useAuth() {
     };
 
     getUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [router, supabase.auth]);
 
   return { user, loading };

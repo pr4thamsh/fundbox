@@ -4,8 +4,11 @@ import { eq } from "drizzle-orm";
 import {
   type Fundraiser,
   type NewFundraiser,
+  activeFundraisersView,
   fundraisers,
 } from "@/db/schema/fundraisers";
+import { organizations } from "@/db/schema/organization";
+import { type Organization } from "@/db/schema/organization";
 
 type CreateFundraiserBody = {
   title: string;
@@ -14,19 +17,33 @@ type CreateFundraiserBody = {
   endDate: string;
   organizationId: number;
   adminId: string;
+  pricePerTicket: number;
+};
+
+type FundraiserWithOrg = {
+  id: number;
+  title: string | null;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  ticketsSold: number | null;
+  fundRaised: number | null;
+  organizationId: number | null;
+  adminId: string | null;
+  organization: Organization;
 };
 
 type UpdateFundraiserBody = Partial<Omit<CreateFundraiserBody, "adminId">>;
 
 type ResponseData = {
   message: string;
-  data?: Fundraiser | Fundraiser[];
+  data?: Fundraiser | Fundraiser[] | FundraiserWithOrg;
   error?: string;
 };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -46,7 +63,6 @@ export default async function handler(
 }
 
 function handleDates(dateStr: string | null) {
-  // Get today's date in local timezone
   if (!dateStr) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -56,9 +72,8 @@ function handleDates(dateStr: string | null) {
     };
   }
 
-  // Handle input date
   const [year, month, day] = dateStr.split("-").map(Number);
-  const date = new Date(year, month - 1, day); // Create date in local timezone
+  const date = new Date(year, month - 1, day);
   date.setHours(0, 0, 0, 0);
 
   return {
@@ -69,20 +84,24 @@ function handleDates(dateStr: string | null) {
 
 async function getFundraisers(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
-    const { organizationId } = req.query;
+    const { organizationId, active } = req.query;
 
     let result: Fundraiser[];
 
-    if (organizationId) {
-      result = await db
-        .select()
-        .from(fundraisers)
-        .where(eq(fundraisers.organizationId, Number(organizationId)));
+    if (active === "true") {
+      result = await db.select().from(activeFundraisersView);
     } else {
-      result = await db.select().from(fundraisers);
+      if (organizationId) {
+        result = await db
+          .select()
+          .from(fundraisers)
+          .where(eq(fundraisers.organizationId, Number(organizationId)));
+      } else {
+        result = await db.select().from(fundraisers);
+      }
     }
 
     return res.status(200).json({
@@ -100,7 +119,7 @@ async function getFundraisers(
 
 async function getFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -112,12 +131,27 @@ async function getFundraiser(
       });
     }
 
-    const [fundraiser] = await db
-      .select()
+    const [result] = await db
+      .select({
+        id: fundraisers.id,
+        title: fundraisers.title,
+        description: fundraisers.description,
+        startDate: fundraisers.startDate,
+        endDate: fundraisers.endDate,
+        ticketsSold: fundraisers.ticketsSold,
+        fundRaised: fundraisers.fundRaised,
+        organizationId: fundraisers.organizationId,
+        adminId: fundraisers.adminId,
+        organization: organizations,
+      })
       .from(fundraisers)
+      .innerJoin(
+        organizations,
+        eq(fundraisers.organizationId, organizations.id),
+      )
       .where(eq(fundraisers.id, Number(id)));
 
-    if (!fundraiser) {
+    if (!result) {
       return res.status(404).json({
         message: "Fundraiser not found",
       });
@@ -125,7 +159,7 @@ async function getFundraiser(
 
     return res.status(200).json({
       message: "Fundraiser retrieved successfully",
-      data: fundraiser,
+      data: result,
     });
   } catch (error) {
     console.error("Get fundraiser error:", error);
@@ -138,7 +172,7 @@ async function getFundraiser(
 
 async function createFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateFundraiserBody;
@@ -183,6 +217,7 @@ async function createFundraiser(
       endDate: body.endDate,
       organizationId: body.organizationId,
       adminId: body.adminId,
+      pricePerTicket: body.pricePerTicket,
     };
 
     const [newFundraiser] = await db
@@ -205,7 +240,7 @@ async function createFundraiser(
 
 async function updateFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -236,7 +271,6 @@ async function updateFundraiser(
     if (updateData.organizationId)
       updateValues.organizationId = updateData.organizationId;
 
-    // Use the same date handling for updates
     if (updateData.startDate) {
       const today = handleDates(null);
       const newStart = handleDates(updateData.startDate);
@@ -288,7 +322,7 @@ async function updateFundraiser(
 
 async function deleteFundraiser(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -300,7 +334,6 @@ async function deleteFundraiser(
       });
     }
 
-    // Check if fundraiser exists
     const [existingFundraiser] = await db
       .select()
       .from(fundraisers)
