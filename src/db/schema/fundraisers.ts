@@ -5,10 +5,19 @@ import {
   text,
   serial,
   date,
+  pgView,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../columns.helper";
 import { admins } from "./admins";
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import {
+  and,
+  gte,
+  InferInsertModel,
+  InferSelectModel,
+  lte,
+  sql,
+} from "drizzle-orm";
+import { organizations } from "./organization";
 
 export const fundraisers = table("fundraisers", {
   id: serial().primaryKey(),
@@ -18,11 +27,33 @@ export const fundraisers = table("fundraisers", {
   endDate: date("end_date"),
   ticketsSold: integer(),
   fundRaised: integer(),
-  // organizationId: integer("organization_id").references(() => organizations.id),
-  organizationId: integer("organization_id"),
+  organizationId: integer("organization_id").references(() => organizations.id),
   adminId: text("admin_id").references(() => admins.id),
+  pricePerTicket: integer("price_per_ticket"),
   ...timestamps,
 });
+
+export const activeFundraisersView = pgView("active_fundraisers_view", {
+  id: serial().primaryKey(),
+  title: varchar(),
+  description: varchar(),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  ticketsSold: integer(),
+  fundRaised: integer(),
+  organizationId: integer("organization_id"),
+  adminId: text("admin_id"),
+  pricePerTicket: integer("price_per_ticket"),
+  ...timestamps,
+}).as(
+  sql`
+    SELECT * FROM ${fundraisers} 
+    WHERE ${and(
+      lte(fundraisers.startDate, sql`CURRENT_DATE`),
+      gte(fundraisers.endDate, sql`CURRENT_DATE`),
+    )}
+  `,
+);
 
 export type Fundraiser = InferSelectModel<typeof fundraisers>;
 export type NewFundraiser = InferInsertModel<typeof fundraisers>;

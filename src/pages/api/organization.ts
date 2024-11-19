@@ -22,7 +22,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -43,7 +43,7 @@ export default async function handler(
 
 async function getOrganizations(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const result = await db.select().from(organizations);
@@ -63,7 +63,7 @@ async function getOrganizations(
 
 async function getOrganization(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -101,7 +101,7 @@ async function getOrganization(
 
 async function createOrganization(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateOrganizationBody;
@@ -140,7 +140,7 @@ async function createOrganization(
 
 async function updateOrganization(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -184,7 +184,7 @@ async function updateOrganization(
 
     const [updatedOrganization] = await db
       .update(organizations)
-      .set(updateValues)
+      .set({ ...updateValues, updated_at: new Date() })
       .where(eq(organizations.id, organizationId))
       .returning();
 
@@ -203,7 +203,7 @@ async function updateOrganization(
 
 async function deleteOrganization(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;

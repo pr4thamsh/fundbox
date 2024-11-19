@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAtom } from "jotai";
 import { adminAtom } from "@/store/admin";
+import TiptapEditor from "@/components/tiptap";
 
 type Fundraiser = {
   id: number;
@@ -50,6 +51,7 @@ export default function DashboardPage() {
     endDate: "",
     organizationId: admin?.organizationId,
     adminId: admin?.id,
+    pricePerTicket: 0,
   });
 
   useEffect(() => {
@@ -63,6 +65,13 @@ export default function DashboardPage() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleEditorChange = (content: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      description: content,
     }));
   };
 
@@ -95,8 +104,9 @@ export default function DashboardPage() {
         description: "",
         startDate: "",
         endDate: "",
-        organizationId: 1,
+        organizationId: admin?.organizationId,
         adminId: admin?.id,
+        pricePerTicket: 0,
       });
     } catch (error) {
       setError(
@@ -140,7 +150,7 @@ export default function DashboardPage() {
               Create Fundraiser
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>Create Fundraiser</DialogTitle>
               <DialogDescription>
@@ -173,13 +183,9 @@ export default function DashboardPage() {
                 <label htmlFor="description" className="text-sm font-medium">
                   Description
                 </label>
-                <Input
-                  id="description"
-                  name="description"
-                  placeholder="Enter description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
+                <TiptapEditor
+                  onChange={handleEditorChange}
+                  initialContent={formData.description}
                 />
               </div>
 
@@ -211,6 +217,21 @@ export default function DashboardPage() {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="pricePerTicket" className="text-sm font-medium">
+                  Price Per Ticket
+                </label>
+                <Input
+                  id="pricePerTicket"
+                  name="pricePerTicket"
+                  placeholder="Enter the price per ticket"
+                  value={formData.pricePerTicket}
+                  onChange={handleInputChange}
+                  type="number"
+                  required
+                />
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -247,7 +268,12 @@ export default function DashboardPage() {
                       {fundraiser.title}
                     </CardTitle>
                     <CardDescription className="mt-2 line-clamp-2">
-                      {fundraiser.description}
+                      <div
+                        className="prose dark:prose-invert"
+                        dangerouslySetInnerHTML={{
+                          __html: fundraiser.description,
+                        }}
+                      />
                     </CardDescription>
                   </div>
                   {isActive && (
