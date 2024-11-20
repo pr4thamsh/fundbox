@@ -9,6 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 type RequestData = {
   fundraiserId: number;
   amount: number;
+  ticketsPurchased: number;
   billingDetails: {
     firstName: string;
     lastName: string;
@@ -75,6 +76,7 @@ export default async function handler(
       },
       metadata: {
         fundraiserId: body.fundraiserId,
+        ticketsPurchased: body.ticketsPurchased,
         firstName: body.billingDetails.firstName,
         lastName: body.billingDetails.lastName,
         email: body.billingDetails.email,

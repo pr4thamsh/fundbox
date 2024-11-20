@@ -30,6 +30,7 @@ type FundraiserWithOrg = {
   fundRaised: number | null;
   organizationId: number | null;
   adminId: string | null;
+  pricePerTicket: number | null;
   organization: Organization;
 };
 
@@ -142,7 +143,7 @@ async function getFundraiser(
         fundRaised: fundraisers.fundRaised,
         organizationId: fundraisers.organizationId,
         adminId: fundraisers.adminId,
-        pricePerTicekt: fundraisers.pricePerTicket,
+        pricePerTicket: fundraisers.pricePerTicket,
         organization: organizations,
       })
       .from(fundraisers)

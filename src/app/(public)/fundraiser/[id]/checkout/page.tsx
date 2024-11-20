@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +24,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import CheckoutForm from "@/components/checkout-form";
 import { useStripeTheme } from "@/hooks/use-stripe-theme";
@@ -46,11 +46,33 @@ const formSchema = z.object({
   country: z.string().min(2, "Please select a country"),
 });
 
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "CAD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const appearance = useStripeTheme();
+
+  const quantity = Number(searchParams?.get("quantity") || 0);
+  const amount = Number(searchParams?.get("amount") || 0);
+  const pricePerTicket = Number(searchParams?.get("price") || 0);
+
+  useEffect(() => {
+    if (!quantity || !amount) {
+      router.push(`/fundraiser/${params?.id}`);
+    } else {
+    }
+  }, [quantity, amount, router, params?.id]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,7 +98,8 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fundraiserId: params?.id,
-          amount: 1000,
+          amount: amount,
+          ticketsPurchased: quantity,
           billingDetails: data,
         }),
       });
@@ -119,11 +142,13 @@ export default function CheckoutPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Tickets</span>
-                <span>2 x $50.00</span>
+                <span>
+                  {quantity} × {formatCurrency(pricePerTicket)}
+                </span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Total</span>
-                <span>$100.00</span>
+                <span>{formatCurrency(amount)}</span>
               </div>
             </div>
           </CardContent>
@@ -332,7 +357,7 @@ export default function CheckoutPage() {
                   appearance,
                 }}
               >
-                <CheckoutForm />
+                <CheckoutForm fundraiserId={params?.id as string} />
               </Elements>
             </CardContent>
           </Card>

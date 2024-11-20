@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
-export default function CheckoutForm() {
+interface CheckoutFormProps {
+  fundraiserId: string | number;
+}
+
+export default function CheckoutForm({ fundraiserId }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState<string | null>(null);
@@ -53,7 +57,7 @@ export default function CheckoutForm() {
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/payment/success`,
+        return_url: `${window.location.origin}/fundraiser/${fundraiserId}/checkout/success`,
       },
     });
 

@@ -86,7 +86,10 @@ export default function FundraiserPage() {
 
   const handleBuyTickets = () => {
     if (ticketQuantity === 0) return;
-    router.push(`/fundraiser/${params?.id}/checkout`);
+    const totalAmount = (fundraiser?.pricePerTicket || 0) * ticketQuantity;
+    router.push(
+      `/fundraiser/${params?.id}/checkout?quantity=${ticketQuantity}&amount=${totalAmount}&price=${fundraiser?.pricePerTicket}`,
+    );
   };
 
   if (loading) {
