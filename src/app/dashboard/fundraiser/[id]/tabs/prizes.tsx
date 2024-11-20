@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,12 +40,16 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
   const fetchPrizes = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/draw/draw?fundraiserId=${fundraiserId}`);
+      const response = await fetch(
+        `/api/draw/draw?fundraiserId=${fundraiserId}`,
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setPrizes(data.data || []);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to fetch prizes");
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch prizes",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +72,7 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
 
     setIsLoading(true);
     setError("");
-    
+
     try {
       const response = await fetch("/api/draw/draw", {
         method: "POST",
@@ -88,7 +87,7 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
 
-      setPrizes(prev => [...prev, data.data]);
+      setPrizes((prev) => [...prev, data.data]);
       setIsAddingPrize(false);
       resetForm();
     } catch (error) {
@@ -108,8 +107,8 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Prizes</h2>
-        <Dialog 
-          open={isAddingPrize} 
+        <Dialog
+          open={isAddingPrize}
           onOpenChange={(open) => {
             setIsAddingPrize(open);
             if (!open) resetForm();
@@ -137,21 +136,18 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
                 <label className="text-sm font-medium">Prize Description</label>
                 <Input
                   value={prize}
-                  onChange={e => setPrize(e.target.value)}
+                  onChange={(e) => setPrize(e.target.value)}
                   placeholder="Enter prize description"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Draw Date</label>
-                <DatePicker
-                  date={selectedDate}
-                  onSelect={setSelectedDate}
-                />
+                <DatePicker date={selectedDate} onSelect={setSelectedDate} />
               </div>
             </div>
             <DialogFooter>
-              <Button 
-                onClick={handleAddPrize} 
+              <Button
+                onClick={handleAddPrize}
                 disabled={isLoading || !prize || !selectedDate}
               >
                 {isLoading ? "Adding..." : "Add Prize"}
@@ -162,7 +158,7 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {prizes.map(prize => (
+        {prizes.map((prize) => (
           <Card key={prize.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -173,7 +169,9 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
             <CardContent>
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>Draw Date: {fixDate(prize.drawDate).toLocaleDateString()}</span>
+                <span>
+                  Draw Date: {fixDate(prize.drawDate).toLocaleDateString()}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -185,7 +183,7 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
           Loading prizes...
         </div>
       )}
-      
+
       {!isLoading && !error && prizes.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
           No prizes added yet. Create one to get started.
