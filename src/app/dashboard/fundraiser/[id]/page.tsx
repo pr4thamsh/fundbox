@@ -93,7 +93,7 @@ export default function FundraiserPage() {
         </TabsContent>
 
         <TabsContent value="draws">
-          <FundraiserDraws fundraiserId={fundraiser.id} />
+          <FundraiserDraws fundraiserId={fundraiser.id} totalTickets={fundraiser.ticketsSold}/>
         </TabsContent>
 
         <TabsContent value="orders">
