@@ -8,7 +8,6 @@ import { CalendarDays, Timer } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -25,6 +24,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAtom } from "jotai";
 import { adminAtom } from "@/store/admin";
 import TiptapEditor from "@/components/tiptap";
+import { DatePickerWithRange } from "@/components/ui/date-picker";
+import { DateRange } from "react-day-picker";
+import { fixDate, formatDateForAPI, isActiveFundraiser } from "@/lib/date-utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Fundraiser = {
   id: number;
@@ -44,11 +47,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    startDate: "",
-    endDate: "",
     organizationId: admin?.organizationId,
     adminId: admin?.id,
     pricePerTicket: 0,
@@ -80,9 +82,17 @@ export default function DashboardPage() {
     setIsLoading(true);
     setError("");
 
+    if (!dateRange?.from || !dateRange?.to) {
+      setError("Please select start and end dates");
+      setIsLoading(false);
+      return;
+    }
+
     const submitData = {
       ...formData,
       adminId: admin?.id,
+      startDate: formatDateForAPI(dateRange.from),
+      endDate: formatDateForAPI(dateRange.to),
     };
 
     try {
@@ -99,15 +109,15 @@ export default function DashboardPage() {
 
       await fetchFundraisers();
       setIsDialogOpen(false);
+      // Reset form
       setFormData({
         title: "",
         description: "",
-        startDate: "",
-        endDate: "",
         organizationId: admin?.organizationId,
         adminId: admin?.id,
         pricePerTicket: 0,
       });
+      setDateRange(undefined);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to create fundraiser",
@@ -189,34 +199,13 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="startDate" className="text-sm font-medium">
-                    Start Date
-                  </label>
-                  <Input
-                    id="startDate"
-                    name="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="endDate" className="text-sm font-medium">
-                    End Date
-                  </label>
-                  <Input
-                    id="endDate"
-                    name="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campaign Duration</label>
+                <DatePickerWithRange
+                  className="w-full"
+                  date={dateRange}
+                  onSelect={setDateRange}
+                />
               </div>
 
               <div className="space-y-2">
@@ -226,10 +215,12 @@ export default function DashboardPage() {
                 <Input
                   id="pricePerTicket"
                   name="pricePerTicket"
+                  type="number"
+                  min="0"
+                  step="0.01"
                   placeholder="Enter the price per ticket"
                   value={formData.pricePerTicket}
                   onChange={handleInputChange}
-                  type="number"
                   required
                 />
               </div>
@@ -243,73 +234,50 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {fundraisers.map((fundraiser) => {
-          const fixDate = (dateString: string | null) => {
-            if (!dateString) return new Date();
-            const [year, month, day] = dateString.split("-").map(Number);
-            const date = new Date(year, month - 1, day);
-            return date;
-          };
-
-          const isActive =
-            fixDate(fundraiser.startDate) <= new Date() &&
-            fixDate(fundraiser.endDate) >= new Date();
-
-          return (
-            <Card
-              key={fundraiser.id}
-              className="flex flex-col transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl cursor-pointer"
-              onClick={() => handleCardClick(fundraiser.id)}
-            >
-              <CardHeader>
-                <div className="flex justify-between items-start space-x-4">
-                  <div>
-                    <CardTitle className="text-xl">
-                      {fundraiser.title}
-                    </CardTitle>
-                    <CardDescription className="mt-2 line-clamp-2">
-                      <div
-                        className="prose dark:prose-invert"
-                        dangerouslySetInnerHTML={{
-                          __html: fundraiser.description,
-                        }}
-                      />
-                    </CardDescription>
-                  </div>
-                  {isActive && (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
-                      Active
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-muted-foreground">Start:</span>
-                    <span>
-                      {fixDate(fundraiser.startDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Timer className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-muted-foreground">End:</span>
-                    <span>
-                      {fixDate(fundraiser.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        {fundraisers.length === 0 && (
-          <div className="col-span-full text-center text-muted-foreground py-8">
-            No fundraisers found. Create one to get started.
-          </div>
-        )}
-      </div>
+  {fundraisers.map((fundraiser) => (
+    <Tooltip key={fundraiser.id}>
+      <TooltipTrigger asChild>
+        <Card
+          className="flex flex-col cursor-pointer transition-colors border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+          onClick={() => handleCardClick(fundraiser.id)}
+        >
+          <CardHeader>
+            <div className="flex justify-between items-start space-x-4">
+              <CardTitle className="text-xl">{fundraiser.title}</CardTitle>
+              {isActiveFundraiser(fundraiser.startDate, fundraiser.endDate) && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
+                  Active
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 text-sm">
+                <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                <span className="text-muted-foreground">Start:</span>
+                <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm">
+                <Timer className="h-5 w-5 text-muted-foreground" />
+                <span className="text-muted-foreground">End:</span>
+                <span>{fixDate(fundraiser.endDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent className="bg-black text-white">
+        <p>Edit</p>
+      </TooltipContent>
+    </Tooltip>
+  ))}
+  {fundraisers.length === 0 && (
+    <div className="col-span-full text-center text-muted-foreground py-8">
+      No fundraisers found. Create one to get started.
+    </div>
+  )}
+</div>
     </div>
   );
 }

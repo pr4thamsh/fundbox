@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SupabaseProvider } from "@/components/providers/supabase-provider";
 import { Provider as JotaiProvider } from "jotai";
+import { setupDatabase } from "@/db";
+
+// Initialize database
+setupDatabase().catch(console.error);
 
 export const metadata: Metadata = {
   title: "FundBox - Fundraiser Manager",
