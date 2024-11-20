@@ -20,7 +20,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   switch (req.method) {
     case "GET":
@@ -61,7 +61,7 @@ function handleDrawDate(dateStr: string | null) {
 
 async function getDraws(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { fundraiserId } = req.query;
@@ -92,7 +92,7 @@ async function getDraws(
 
 async function getDraw(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -130,7 +130,7 @@ async function getDraw(
 
 async function createDraw(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const body = req.body as CreateDrawBody;
@@ -159,10 +159,7 @@ async function createDraw(
       supporterId: body.supporterId ?? null,
     };
 
-    const [newDraw] = await db
-      .insert(draws)
-      .values(newDrawData)
-      .returning();
+    const [newDraw] = await db.insert(draws).values(newDrawData).returning();
 
     return res.status(201).json({
       message: "Draw created successfully",
@@ -179,7 +176,7 @@ async function createDraw(
 
 async function updateDraw(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
@@ -243,7 +240,7 @@ async function updateDraw(
 
 async function deleteDraw(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   try {
     const { id } = req.query;
