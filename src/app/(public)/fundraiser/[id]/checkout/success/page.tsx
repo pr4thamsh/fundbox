@@ -32,8 +32,6 @@ interface PaymentSuccess {
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "CAD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -133,9 +131,7 @@ export default function SuccessPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date</span>
                 <span className="font-medium">
-                  {new Date(
-                    paymentDetails.payment.created,
-                  ).toLocaleDateString()}
+                  {new Date(paymentDetails.payment.created).toString()}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -160,7 +156,7 @@ export default function SuccessPage() {
                 </span>
               </div>
               <span className="font-medium">
-                {formatCurrency(paymentDetails.payment.amount)}
+                ${formatCurrency(paymentDetails.payment.amount / 100)}
               </span>
             </div>
           </div>

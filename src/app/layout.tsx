@@ -4,8 +4,8 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SupabaseProvider } from "@/components/providers/supabase-provider";
 import { Provider as JotaiProvider } from "jotai";
 import { setupDatabase } from "@/db";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 
-// Initialize database
 setupDatabase().catch(console.error);
 
 export const metadata: Metadata = {
@@ -30,9 +30,11 @@ export default function RootLayout({
         >
           <JotaiProvider>
             <SupabaseProvider>
-              <main className="relative flex min-h-screen flex-col">
-                {children}
-              </main>
+              <ReactQueryProvider>
+                <main className="relative flex min-h-screen flex-col">
+                  {children}
+                </main>
+              </ReactQueryProvider>
             </SupabaseProvider>
           </JotaiProvider>
         </ThemeProvider>

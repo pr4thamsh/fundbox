@@ -24,10 +24,8 @@ import {
 import { Fundraiser } from "@/db/schema/fundraisers";
 
 function formatCurrency(amount: number | null) {
-  if (amount === null) return "CAD $0";
+  if (amount === null) return "0";
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "CAD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -41,8 +39,6 @@ export default function ExplorePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log(new Date().toLocaleDateString("en-CA"));
-
     const fetchActiveFundraisers = async () => {
       try {
         const response = await fetch("/api/fundraiser?active=true");
@@ -172,11 +168,15 @@ export default function ExplorePage() {
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                    {fundraiser.description}
-                  </p>
+                  <p
+                    className="text-sm text-muted-foreground line-clamp-3 mb-4 prose dark:prose-invert truncate"
+                    dangerouslySetInnerHTML={{
+                      __html: fundraiser.description as string,
+                    }}
+                  ></p>
                   <div className="text-sm font-medium">
-                    Funds Raised: {formatCurrency(fundraiser.fundRaised || 0)}
+                    Funds Raised: $
+                    {formatCurrency((fundraiser.fundRaised || 0) / 100)}
                   </div>
                 </CardContent>
                 <CardFooter className="border-t pt-6">

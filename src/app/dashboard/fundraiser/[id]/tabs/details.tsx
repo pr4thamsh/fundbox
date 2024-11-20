@@ -1,4 +1,3 @@
-// src/app/dashboard/fundraiser/[id]/tabs/details.tsx
 "use client";
 
 import { useState } from "react";
@@ -22,21 +21,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { 
-  CalendarDays, 
-  Users, 
-  DollarSign, 
+import {
+  CalendarDays,
+  Users,
+  DollarSign,
   Timer,
   Pencil,
   Trash2,
   Save,
-  X
+  X,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DatePickerWithRange } from "@/components/ui/date-picker";
 import { DateRange } from "react-day-picker";
 import TiptapEditor from "@/components/tiptap";
-import { fixDate, formatDateForAPI, isActiveFundraiser } from "@/lib/date-utils";
+import {
+  fixDate,
+  formatDateForAPI,
+  isActiveFundraiser,
+} from "@/lib/date-utils";
 
 interface DetailsProps {
   fundraiser: Fundraiser;
@@ -52,24 +55,26 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: fixDate(fundraiser.startDate),
-    to: fixDate(fundraiser.endDate)
+    to: fixDate(fundraiser.endDate),
   });
   const [formData, setFormData] = useState({
     title: fundraiser.title,
     description: fundraiser.description,
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     if (error) setError("");
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleEditorChange = (content: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       description: content,
     }));
@@ -107,7 +112,9 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
       setFundraiser(data.data);
       setIsEditing(false);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to update fundraiser");
+      setError(
+        error instanceof Error ? error.message : "Failed to update fundraiser",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +138,9 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
 
       router.push("/dashboard");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to delete fundraiser");
+      setError(
+        error instanceof Error ? error.message : "Failed to delete fundraiser",
+      );
     } finally {
       setIsLoading(false);
       setIsDeleteDialogOpen(false);
@@ -167,7 +176,9 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Campaign Duration</label>
+                    <label className="text-sm font-medium">
+                      Campaign Duration
+                    </label>
                     <DatePickerWithRange
                       className="w-full"
                       date={dateRange}
@@ -179,9 +190,9 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                       <Save className="h-4 w-4 mr-2" />
                       {isLoading ? "Saving..." : "Save Changes"}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => {
                         setIsEditing(false);
                         setFormData({
@@ -190,7 +201,7 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                         });
                         setDateRange({
                           from: fixDate(fundraiser.startDate),
-                          to: fixDate(fundraiser.endDate)
+                          to: fixDate(fundraiser.endDate),
                         });
                       }}
                     >
@@ -202,16 +213,21 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
               ) : (
                 <>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-2xl">{fundraiser.title}</CardTitle>
+                    <CardTitle className="text-2xl">
+                      {fundraiser.title}
+                    </CardTitle>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => setIsEditing(true)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <Dialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={setIsDeleteDialogOpen}
+                      >
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -221,19 +237,29 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                           <DialogHeader>
                             <DialogTitle>Delete Fundraiser</DialogTitle>
                             <DialogDescription>
-                              This action cannot be undone. This will permanently delete the
-                              <span className="font-semibold"> {fundraiser.title} </span>
+                              This action cannot be undone. This will
+                              permanently delete the
+                              <span className="font-semibold">
+                                {" "}
+                                {fundraiser.title}{" "}
+                              </span>
                               fundraiser and all of its data.
                             </DialogDescription>
                           </DialogHeader>
-                          
+
                           <div className="space-y-4 py-4">
                             <p className="text-sm text-muted-foreground">
-                              Please type <span className="font-semibold">{fundraiser.title}</span> to confirm.
+                              Please type{" "}
+                              <span className="font-semibold">
+                                {fundraiser.title}
+                              </span>{" "}
+                              to confirm.
                             </p>
                             <Input
                               value={deleteConfirmation}
-                              onChange={(e) => setDeleteConfirmation(e.target.value)}
+                              onChange={(e) =>
+                                setDeleteConfirmation(e.target.value)
+                              }
                               placeholder="Type the fundraiser name"
                               className="max-w-full"
                             />
@@ -243,7 +269,10 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                             <Button
                               variant="destructive"
                               onClick={handleDelete}
-                              disabled={deleteConfirmation !== fundraiser.title || isLoading}
+                              disabled={
+                                deleteConfirmation !== fundraiser.title ||
+                                isLoading
+                              }
                             >
                               {isLoading ? "Deleting..." : "Delete Fundraiser"}
                             </Button>
@@ -255,17 +284,20 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
                   <CardDescription className="text-base">
                     <div
                       className="prose dark:prose-invert"
-                      dangerouslySetInnerHTML={{ __html: fundraiser.description }}
+                      dangerouslySetInnerHTML={{
+                        __html: fundraiser.description,
+                      }}
                     />
                   </CardDescription>
                 </>
               )}
             </div>
-            {isActiveFundraiser(fundraiser.startDate, fundraiser.endDate) && !isEditing && (
-              <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
-                Active
-              </span>
-            )}
+            {isActiveFundraiser(fundraiser.startDate, fundraiser.endDate) &&
+              !isEditing && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
+                  Active
+                </span>
+              )}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -274,7 +306,9 @@ export function FundraiserDetails({ fundraiser, setFundraiser }: DetailsProps) {
               <div className="flex items-center space-x-2">
                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
                 <span className="text-muted-foreground">Start Date:</span>
-                <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
+                <span>
+                  {fixDate(fundraiser.startDate).toLocaleDateString()}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Timer className="h-5 w-5 text-muted-foreground" />

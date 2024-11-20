@@ -22,7 +22,10 @@ interface DrawsProps {
   totalTickets: number | null | undefined;
 }
 
-export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) {
+export function FundraiserDraws({
+  fundraiserId,
+  totalTickets = 0,
+}: DrawsProps) {
   const [draws, setDraws] = useState<Draw[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,12 +35,16 @@ export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) 
   const fetchDraws = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/draw/draw?fundraiserId=${fundraiserId}`);
+      const response = await fetch(
+        `/api/draw/draw?fundraiserId=${fundraiserId}`,
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setDraws(data.data || []);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to fetch draws");
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch draws",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -74,11 +81,14 @@ export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) 
 
       await fetchDraws(); // Refresh the draws list
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to pick winner";
+      const message =
+        error instanceof Error ? error.message : "Failed to pick winner";
       setError(message);
-      
+
       if (message.includes("No tickets found")) {
-        setError("No tickets available for this draw. Ensure tickets have been purchased.");
+        setError(
+          "No tickets available for this draw. Ensure tickets have been purchased.",
+        );
       } else if (message.includes("Draw can only be processed")) {
         setError("This draw can only be processed on its scheduled date.");
       }
@@ -97,16 +107,14 @@ export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) 
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {draws.map(draw => (
+        {draws.map((draw) => (
           <Card key={draw.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 <Trophy className="h-4 w-4 inline-block mr-2" />
                 {draw.prize}
               </CardTitle>
-              <Badge
-                variant={draw.supporterId ? "default" : "outline"}
-              >
+              <Badge variant={draw.supporterId ? "default" : "outline"}>
                 {draw.supporterId ? "Winner Selected" : "Pending"}
               </Badge>
             </CardHeader>
@@ -114,7 +122,9 @@ export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) 
               <div className="space-y-2">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Draw Date: {fixDate(draw.drawDate).toLocaleDateString()}</span>
+                  <span>
+                    Draw Date: {fixDate(draw.drawDate).toLocaleDateString()}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Ticket className="h-4 w-4" />
@@ -123,7 +133,11 @@ export function FundraiserDraws({ fundraiserId, totalTickets = 0 }: DrawsProps) 
               </div>
               <Button
                 onClick={() => handlePickWinner(draw)}
-                disabled={!isDrawDate(draw.drawDate) || !!draw.supporterId || isPickingWinner}
+                disabled={
+                  !isDrawDate(draw.drawDate) ||
+                  !!draw.supporterId ||
+                  isPickingWinner
+                }
                 className="w-full"
               >
                 <Gift className="h-4 w-4 mr-2" />

@@ -22,15 +22,15 @@ type CreateFundraiserBody = {
 
 type FundraiserWithOrg = {
   id: number;
-  title: string | null;
-  description: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  ticketsSold: number | null;
-  fundRaised: number | null;
-  organizationId: number | null;
-  adminId: string | null;
-  pricePerTicket: number | null;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  ticketsSold: number;
+  fundRaised: number;
+  organizationId: number;
+  adminId: string;
+  pricePerTicket: number;
   organization: Organization;
 };
 
@@ -220,6 +220,8 @@ async function createFundraiser(
       organizationId: body.organizationId,
       adminId: body.adminId,
       pricePerTicket: body.pricePerTicket,
+      ticketsSold: 0,
+      fundRaised: 0,
     };
 
     const [newFundraiser] = await db
