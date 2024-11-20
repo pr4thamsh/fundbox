@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Organization } from "@/db/schema/organization";
 
 type FundraiserWithOrg = {
@@ -35,7 +35,7 @@ function formatCurrency(amount: number | null) {
   if (!amount) return "$0";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "CAD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -43,6 +43,7 @@ function formatCurrency(amount: number | null) {
 
 export default function FundraiserPage() {
   const params = useParams();
+  const router = useRouter();
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [fundraiser, setFundraiser] = useState<FundraiserWithOrg | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,6 +82,11 @@ export default function FundraiserPage() {
     if (ticketQuantity > 0) {
       setTicketQuantity((prev) => prev - 1);
     }
+  };
+
+  const handleBuyTickets = () => {
+    if (ticketQuantity === 0) return;
+    router.push(`/fundraiser/${params?.id}/checkout`);
   };
 
   if (loading) {
@@ -128,7 +134,9 @@ export default function FundraiserPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">{daysLeft} days left</span>
             </div>
-            <Badge variant="secondary">Active</Badge>
+            <Badge variant="secondary" color="green">
+              Active
+            </Badge>
           </div>
 
           <Separator />
@@ -233,10 +241,7 @@ export default function FundraiserPage() {
                   <Button
                     className="w-full"
                     disabled={ticketQuantity === 0}
-                    onClick={() => {
-                      // Add your ticket purchase logic here
-                      console.log(`Purchasing ${ticketQuantity} tickets`);
-                    }}
+                    onClick={handleBuyTickets}
                   >
                     {ticketQuantity === 0 ? "Select Tickets" : "Buy Tickets"}
                   </Button>

@@ -142,6 +142,7 @@ async function getFundraiser(
         fundRaised: fundraisers.fundRaised,
         organizationId: fundraisers.organizationId,
         adminId: fundraisers.adminId,
+        pricePerTicekt: fundraisers.pricePerTicket,
         organization: organizations,
       })
       .from(fundraisers)
