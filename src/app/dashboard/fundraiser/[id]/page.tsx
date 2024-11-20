@@ -9,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import { FundraiserDetails } from "./tabs/details";
 import { FundraiserPrizes } from "./tabs/prizes";
 import { FundraiserDraws } from "./tabs/draws";
+import FundraiserOrders from "./tabs/orders";
 
 export type Fundraiser = {
   id: number;
@@ -77,12 +78,13 @@ export default function FundraiserPage() {
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="prizes">Prizes</TabsTrigger>
           <TabsTrigger value="draws">Draws</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
-          <FundraiserDetails 
-            fundraiser={fundraiser} 
-            setFundraiser={setFundraiser} 
+          <FundraiserDetails
+            fundraiser={fundraiser}
+            setFundraiser={setFundraiser}
           />
         </TabsContent>
 
@@ -92,6 +94,10 @@ export default function FundraiserPage() {
 
         <TabsContent value="draws">
           <FundraiserDraws fundraiserId={fundraiser.id} />
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <FundraiserOrders fundraiserId={fundraiser.id} />
         </TabsContent>
       </Tabs>
     </div>

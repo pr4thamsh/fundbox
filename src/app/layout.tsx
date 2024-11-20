@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SupabaseProvider } from "@/components/providers/supabase-provider";
 import { Provider as JotaiProvider } from "jotai";
+import { ReactQueryProvider } from "@/components/providers/react-query-provider";
 
 export const metadata: Metadata = {
   title: "FundBox - Fundraiser Manager",
@@ -26,9 +27,11 @@ export default function RootLayout({
         >
           <JotaiProvider>
             <SupabaseProvider>
-              <main className="relative flex min-h-screen flex-col">
-                {children}
-              </main>
+              <ReactQueryProvider>
+                <main className="relative flex min-h-screen flex-col">
+                  {children}
+                </main>
+              </ReactQueryProvider>
             </SupabaseProvider>
           </JotaiProvider>
         </ThemeProvider>
