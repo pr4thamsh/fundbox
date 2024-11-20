@@ -146,13 +146,12 @@ export default function FundraiserPage() {
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">About this Fundraiser</h2>
-            <div className="prose dark:prose-invert max-w-none">
-              {fundraiser.description?.split("\n").map((paragraph, index) => (
-                <p key={index} className="text-muted-foreground">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            <div
+              className="prose dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: fundraiser.description as string,
+              }}
+            />
           </div>
 
           <div className="space-y-4">
@@ -183,7 +182,7 @@ export default function FundraiserPage() {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-3xl font-bold">
-                  {formatCurrency(fundraiser.fundRaised)}
+                  {formatCurrency(fundraiser.fundRaised! / 100)}
                 </div>
                 <p className="text-sm text-muted-foreground">Total Raised</p>
               </div>

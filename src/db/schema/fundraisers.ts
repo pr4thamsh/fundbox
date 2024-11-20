@@ -21,29 +21,33 @@ import { organizations } from "./organization";
 
 export const fundraisers = table("fundraisers", {
   id: serial().primaryKey(),
-  title: varchar(),
-  description: varchar(),
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  ticketsSold: integer(),
-  fundRaised: integer(),
-  organizationId: integer("organization_id").references(() => organizations.id),
-  adminId: text("admin_id").references(() => admins.id),
-  pricePerTicket: integer("price_per_ticket"),
+  title: varchar().notNull(),
+  description: varchar().notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  ticketsSold: integer("tickets_sold").notNull(),
+  fundRaised: integer("fund_raised").notNull(),
+  organizationId: integer("organization_id")
+    .references(() => organizations.id)
+    .notNull(),
+  adminId: text("admin_id")
+    .references(() => admins.id)
+    .notNull(),
+  pricePerTicket: integer("price_per_ticket").notNull(),
   ...timestamps,
 });
 
 export const activeFundraisersView = pgView("active_fundraisers_view", {
   id: serial().primaryKey(),
-  title: varchar(),
-  description: varchar(),
-  startDate: date("start_date"),
-  endDate: date("end_date"),
-  ticketsSold: integer(),
-  fundRaised: integer(),
-  organizationId: integer("organization_id"),
-  adminId: text("admin_id"),
-  pricePerTicket: integer("price_per_ticket"),
+  title: varchar().notNull(),
+  description: varchar().notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  ticketsSold: integer("tickets_sold").notNull(),
+  fundRaised: integer("fund_raised").notNull(),
+  organizationId: integer("organization_id").notNull(),
+  adminId: text("admin_id").notNull(),
+  pricePerTicket: integer("price_per_ticket").notNull(),
   ...timestamps,
 }).as(
   sql`
