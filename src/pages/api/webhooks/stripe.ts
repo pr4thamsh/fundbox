@@ -60,26 +60,29 @@ export default async function handler(
               })
               .returning();
 
-            // Update fundraiser and get current ticketsSold atomically
+            // Update fundraiser with coalesce to handle null values
             const [updatedFundraiser] = await tx
               .update(fundraisers)
               .set({
-                ticketsSold: sql`${fundraisers.ticketsSold} + ${parseInt(
-                  metadata.ticketsPurchased,
-                )}`,
-                fundRaised: sql`${fundraisers.fundRaised} + ${paymentIntent.amount}`,
+                ticketsSold: sql`coalesce(${
+                  fundraisers.ticketsSold
+                }, 0) + ${parseInt(metadata.ticketsPurchased)}`,
+                fundRaised: sql`coalesce(${fundraisers.fundRaised}, 0) + ${paymentIntent.amount}`,
               })
               .where(eq(fundraisers.id, parseInt(metadata.fundraiserId)))
-              .returning({ currentTicketsSold: fundraisers.ticketsSold });
+              .returning({
+                previousTicketsSold: fundraisers.ticketsSold,
+                newTicketsSold: sql`coalesce(${
+                  fundraisers.ticketsSold
+                }, 0) + ${parseInt(metadata.ticketsPurchased)}`,
+              });
 
-            // Calculate ticket numbers based on updated ticketsSold
-            const ticketStart =
-              updatedFundraiser.currentTicketsSold! -
-              parseInt(metadata.ticketsPurchased) +
-              1;
+            // Calculate ticket numbers starting from 1 if previousTicketsSold was null
+            const startingTicket =
+              (updatedFundraiser.previousTicketsSold ?? 0) + 1;
             const ticketNumbers = Array.from(
               { length: parseInt(metadata.ticketsPurchased) },
-              (_, i) => ticketStart + i,
+              (_, i) => startingTicket + i,
             );
 
             // Create order
