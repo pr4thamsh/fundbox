@@ -17,8 +17,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, Trophy } from "lucide-react";
+import { Plus, Trophy, Calendar } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DatePicker } from "@/components/ui/date-picker-single";
 import React from "react";
+import { fixDate, formatDateForAPI } from "@/lib/date-utils";
 
 type Prize = {
   id: number;
@@ -33,15 +36,16 @@ interface PrizesProps {
 
 export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
   const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isAddingPrize, setIsAddingPrize] = useState(false);
-  const [newPrize, setNewPrize] = useState({ prize: "", drawDate: "" });
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [prize, setPrize] = useState("");
 
   const fetchPrizes = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/draw?fundraiserId=${fundraiserId}`);
+      const response = await fetch(`/api/draw/draw?fundraiserId=${fundraiserId}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setPrizes(data.data || []);
@@ -57,13 +61,26 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
   }, [fetchPrizes]);
 
   async function handleAddPrize() {
+    if (!selectedDate) {
+      setError("Please select a draw date");
+      return;
+    }
+
+    if (!prize) {
+      setError("Please enter a prize description");
+      return;
+    }
+
     setIsLoading(true);
+    setError("");
+    
     try {
-      const response = await fetch("/api/draw", {
+      const response = await fetch("/api/draw/draw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...newPrize,
+          prize,
+          drawDate: formatDateForAPI(selectedDate),
           fundraiserId,
         }),
       });
@@ -73,7 +90,7 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
 
       setPrizes(prev => [...prev, data.data]);
       setIsAddingPrize(false);
-      setNewPrize({ prize: "", drawDate: "" });
+      resetForm();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to add prize");
     } finally {
@@ -81,11 +98,23 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
     }
   }
 
+  const resetForm = () => {
+    setPrize("");
+    setSelectedDate(undefined);
+    setError("");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Prizes</h2>
-        <Dialog open={isAddingPrize} onOpenChange={setIsAddingPrize}>
+        <Dialog 
+          open={isAddingPrize} 
+          onOpenChange={(open) => {
+            setIsAddingPrize(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -96,26 +125,35 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
             <DialogHeader>
               <DialogTitle>Add New Prize</DialogTitle>
             </DialogHeader>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label>Prize Description</label>
+                <label className="text-sm font-medium">Prize Description</label>
                 <Input
-                  value={newPrize.prize}
-                  onChange={e => setNewPrize(prev => ({ ...prev, prize: e.target.value }))}
+                  value={prize}
+                  onChange={e => setPrize(e.target.value)}
                   placeholder="Enter prize description"
                 />
               </div>
               <div className="space-y-2">
-                <label>Draw Date</label>
-                <Input
-                  type="date"
-                  value={newPrize.drawDate}
-                  onChange={e => setNewPrize(prev => ({ ...prev, drawDate: e.target.value }))}
+                <label className="text-sm font-medium">Draw Date</label>
+                <DatePicker
+                  date={selectedDate}
+                  onSelect={setSelectedDate}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleAddPrize} disabled={isLoading}>
+              <Button 
+                onClick={handleAddPrize} 
+                disabled={isLoading || !prize || !selectedDate}
+              >
                 {isLoading ? "Adding..." : "Add Prize"}
               </Button>
             </DialogFooter>
@@ -133,19 +171,24 @@ export function FundraiserPrizes({ fundraiserId }: PrizesProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Draw Date: {new Date(prize.drawDate).toLocaleDateString()}
-              </p>
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Draw Date: {fixDate(prize.drawDate).toLocaleDateString()}</span>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {isLoading && <div>Loading prizes...</div>}
-      {error && <div className="text-red-500">{error}</div>}
+      {isLoading && !error && prizes.length === 0 && (
+        <div className="text-center text-muted-foreground py-8">
+          Loading prizes...
+        </div>
+      )}
+      
       {!isLoading && !error && prizes.length === 0 && (
-        <div className="text-center text-muted-foreground">
-          No prizes added yet
+        <div className="text-center text-muted-foreground py-8">
+          No prizes added yet. Create one to get started.
         </div>
       )}
     </div>
