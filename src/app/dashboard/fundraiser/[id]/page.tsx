@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { FundraiserDetails } from "./tabs/details";
 import { FundraiserPrizes } from "./tabs/prizes";
-import { FundraiserDraws } from "./tabs/draws";
+import FundraiserDraws from "./tabs/draws";
 import FundraiserOrders from "./tabs/orders";
 
 export type Fundraiser = {

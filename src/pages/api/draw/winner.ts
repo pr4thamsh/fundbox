@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { draws } from "@/db/schema/draws";
-import { eq } from "drizzle-orm";
 
 type ResponseData = {
   message: string;
@@ -19,7 +18,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
@@ -35,11 +34,7 @@ export default async function handler(
   }
 
   try {
-    // First verify the draw exists and is ready for winner selection
-    const [draw] = await db
-      .select()
-      .from(draws)
-      .where(eq(draws.id, drawId));
+    const [draw] = await db.select().from(draws).where(eq(draws.id, drawId));
 
     if (!draw) {
       return res.status(404).json({
@@ -48,24 +43,16 @@ export default async function handler(
       });
     }
 
-    // Call the stored procedure
     const [result] = await db.execute<{
-      p_selected_supporter_id: number;
-      p_first_name: string;
-      p_last_name: string;
-      p_email: string;
+      supporter_id: number;
+      first_name: string;
+      last_name: string;
+      email: string;
     }>(sql`
-      CALL pick_draw_winner(
-        ${drawId},
-        NULL,
-        NULL,
-        NULL,
-        NULL
-      );
+      SELECT * FROM pick_draw_winner(${drawId});
     `);
 
-    // Verify we got a result
-    if (!result.p_selected_supporter_id) {
+    if (!result || !result.supporter_id) {
       throw new Error("Failed to select winner");
     }
 
@@ -73,18 +60,18 @@ export default async function handler(
       message: "Winner selected successfully",
       data: {
         winner: {
-          supporterId: result.p_selected_supporter_id,
-          firstName: result.p_first_name,
-          lastName: result.p_last_name,
-          email: result.p_email,
+          supporterId: result.supporter_id,
+          firstName: result.first_name,
+          lastName: result.last_name,
+          email: result.email,
         },
       },
     });
   } catch (error) {
     console.error("Pick winner error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error occurred";
+    const message =
+      error instanceof Error ? error.message : "Unknown error occurred";
 
-    // Handle specific error cases
     if (message.includes("Draw date is in the future")) {
       return res.status(400).json({
         message: "Invalid draw date",

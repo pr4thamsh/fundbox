@@ -2,16 +2,16 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Trophy, Calendar, Ticket, Eye } from "lucide-react";
+import { Gift, Trophy, Calendar, Ticket, Eye, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import React from "react";
-import { fixDate } from "@/lib/date-utils";
 
 type Draw = {
   id: number;
@@ -26,7 +26,6 @@ type Winner = {
   firstName: string;
   lastName: string;
   email: string;
-  ticketNumber: number;
 };
 
 interface DrawsProps {
@@ -34,7 +33,9 @@ interface DrawsProps {
   totalTickets: number | null | undefined;
 }
 
-export function FundraiserDraws({
+const fixDate = (date: string) => new Date(date);
+
+export default function FundraiserDraws({
   fundraiserId,
   totalTickets = 0,
 }: DrawsProps) {
@@ -88,30 +89,24 @@ export function FundraiserDraws({
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to pick winner");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to pick winner");
-      }
-
-      // Show winner information immediately
       if (data.data?.winner) {
         setSelectedWinner(data.data.winner);
         setIsWinnerDialogOpen(true);
       }
 
-      await fetchDraws(); // Refresh the draws list
+      await fetchDraws();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to pick winner";
-      setError(message);
-
-      if (message.includes("No tickets found")) {
-        setError(
-          "No tickets available for this draw. Ensure tickets have been purchased.",
-        );
-      } else if (message.includes("Draw can only be processed")) {
-        setError("This draw can only be processed on its scheduled date.");
-      }
+      setError(
+        message.includes("No tickets found")
+          ? "No tickets available for this draw. Ensure tickets have been purchased."
+          : message.includes("Draw can only be processed")
+          ? "This draw can only be processed on its scheduled date."
+          : message,
+      );
     } finally {
       setPickingWinnerIds((prev) => prev.filter((id) => id !== draw.id));
     }
@@ -121,7 +116,6 @@ export function FundraiserDraws({
     try {
       const response = await fetch(`/api/draw/winner/${drawId}`);
       const data = await response.json();
-
       if (!response.ok) throw new Error(data.error);
 
       if (data.data?.winner) {
@@ -137,117 +131,146 @@ export function FundraiserDraws({
     }
   };
 
+  if (isLoading && !error && draws.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Loading draws...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !error && draws.length === 0) {
+    return (
+      <Card className="bg-muted/50">
+        <CardContent className="flex flex-col items-center justify-center h-64 space-y-4">
+          <Trophy className="h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground text-center">
+            No draws available yet.
+            <br />
+            Add prizes first to enable draws.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-in fade-in-0">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {draws.map((draw) => (
-          <Card key={draw.id}>
+          <Card key={draw.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                <Trophy className="h-4 w-4 inline-block mr-2" />
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" />
                 {draw.prize}
               </CardTitle>
-              <Badge variant={draw.supporterId ? "default" : "outline"}>
+              <Badge
+                variant={draw.supporterId ? "default" : "secondary"}
+                className="ml-2"
+              >
                 {draw.supporterId ? "Winner Selected" : "Pending"}
               </Badge>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Draw Date: {fixDate(draw.drawDate).toLocaleDateString()}
-                  </span>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>{fixDate(draw.drawDate).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Ticket className="h-4 w-4" />
-                  <span>Total Tickets: {safeTicketCount}</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <Ticket className="h-4 w-4 text-muted-foreground" />
+                  <span>{safeTicketCount.toLocaleString()} tickets</span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                {draw.supporterId ? (
-                  <Button
-                    onClick={() => handleViewWinner(draw.id)}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Winner
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handlePickWinner(draw)}
-                    disabled={
-                      !isDrawDate(draw.drawDate) ||
-                      !!draw.supporterId ||
-                      pickingWinnerIds.includes(draw.id)
-                    }
-                    className="w-full"
-                  >
-                    <Gift className="h-4 w-4 mr-2" />
-                    {pickingWinnerIds.includes(draw.id)
-                      ? "Picking Winner..."
-                      : "Pick Winner"}
-                  </Button>
-                )}
-              </div>
+
+              {draw.supporterId ? (
+                <Button
+                  onClick={() => handleViewWinner(draw.id)}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Winner
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handlePickWinner(draw)}
+                  disabled={
+                    !isDrawDate(draw.drawDate) ||
+                    !!draw.supporterId ||
+                    pickingWinnerIds.includes(draw.id)
+                  }
+                  className="w-full"
+                >
+                  {pickingWinnerIds.includes(draw.id) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Picking Winner...
+                    </>
+                  ) : (
+                    <>
+                      <Gift className="h-4 w-4 mr-2" />
+                      Pick Winner
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
       <Dialog open={isWinnerDialogOpen} onOpenChange={setIsWinnerDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Winner Information</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              Winner Information
+            </DialogTitle>
           </DialogHeader>
           {selectedWinner && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">
                     Name
                   </p>
-                  <p>
+                  <p className="font-medium">
                     {selectedWinner.firstName} {selectedWinner.lastName}
                   </p>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">
                     Email
                   </p>
-                  <p className="break-all">{selectedWinner.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Winning Ticket #
+                  <p className="font-medium break-all">
+                    {selectedWinner.email}
                   </p>
-                  <p className="font-mono">{selectedWinner.ticketNumber}</p>
                 </div>
               </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setIsWinnerDialogOpen(false)}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {isLoading && !error && draws.length === 0 && (
-        <div className="text-center text-muted-foreground py-8">
-          Loading draws...
-        </div>
-      )}
-
-      {!isLoading && !error && draws.length === 0 && (
-        <div className="text-center text-muted-foreground py-8">
-          No draws available. Add prizes first to enable draws.
-        </div>
-      )}
     </div>
   );
 }
