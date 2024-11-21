@@ -1,11 +1,15 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Trophy, Calendar, Ticket } from "lucide-react";
+import { Gift, Trophy, Calendar, Ticket, Eye } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import React from "react";
 import { fixDate } from "@/lib/date-utils";
 
@@ -15,6 +19,14 @@ type Draw = {
   prize: string;
   fundraiserId: number;
   supporterId: number | null;
+};
+
+type Winner = {
+  supporterId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  ticketNumber: number;
 };
 
 interface DrawsProps {
@@ -29,7 +41,9 @@ export function FundraiserDraws({
   const [draws, setDraws] = useState<Draw[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isPickingWinner, setIsPickingWinner] = useState(false);
+  const [pickingWinnerIds, setPickingWinnerIds] = useState<number[]>([]);
+  const [selectedWinner, setSelectedWinner] = useState<Winner | null>(null);
+  const [isWinnerDialogOpen, setIsWinnerDialogOpen] = useState(false);
   const safeTicketCount = totalTickets ?? 0;
 
   const fetchDraws = React.useCallback(async () => {
@@ -63,8 +77,8 @@ export function FundraiserDraws({
   };
 
   const handlePickWinner = async (draw: Draw) => {
-    setIsPickingWinner(true);
     setError("");
+    setPickingWinnerIds((prev) => [...prev, draw.id]);
 
     try {
       const response = await fetch("/api/draw/winner", {
@@ -77,6 +91,12 @@ export function FundraiserDraws({
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to pick winner");
+      }
+
+      // Show winner information immediately
+      if (data.data?.winner) {
+        setSelectedWinner(data.data.winner);
+        setIsWinnerDialogOpen(true);
       }
 
       await fetchDraws(); // Refresh the draws list
@@ -93,7 +113,27 @@ export function FundraiserDraws({
         setError("This draw can only be processed on its scheduled date.");
       }
     } finally {
-      setIsPickingWinner(false);
+      setPickingWinnerIds((prev) => prev.filter((id) => id !== draw.id));
+    }
+  };
+
+  const handleViewWinner = async (drawId: number) => {
+    try {
+      const response = await fetch(`/api/draw/winner/${drawId}`);
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error);
+
+      if (data.data?.winner) {
+        setSelectedWinner(data.data.winner);
+        setIsWinnerDialogOpen(true);
+      }
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch winner details",
+      );
     }
   };
 
@@ -131,22 +171,71 @@ export function FundraiserDraws({
                   <span>Total Tickets: {safeTicketCount}</span>
                 </div>
               </div>
-              <Button
-                onClick={() => handlePickWinner(draw)}
-                disabled={
-                  !isDrawDate(draw.drawDate) ||
-                  !!draw.supporterId ||
-                  isPickingWinner
-                }
-                className="w-full"
-              >
-                <Gift className="h-4 w-4 mr-2" />
-                {isPickingWinner ? "Picking Winner..." : "Pick Winner"}
-              </Button>
+              <div className="flex gap-2">
+                {draw.supporterId ? (
+                  <Button
+                    onClick={() => handleViewWinner(draw.id)}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Winner
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handlePickWinner(draw)}
+                    disabled={
+                      !isDrawDate(draw.drawDate) ||
+                      !!draw.supporterId ||
+                      pickingWinnerIds.includes(draw.id)
+                    }
+                    className="w-full"
+                  >
+                    <Gift className="h-4 w-4 mr-2" />
+                    {pickingWinnerIds.includes(draw.id)
+                      ? "Picking Winner..."
+                      : "Pick Winner"}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <Dialog open={isWinnerDialogOpen} onOpenChange={setIsWinnerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Winner Information</DialogTitle>
+          </DialogHeader>
+          {selectedWinner && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </p>
+                  <p>
+                    {selectedWinner.firstName} {selectedWinner.lastName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </p>
+                  <p className="break-all">{selectedWinner.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Winning Ticket #
+                  </p>
+                  <p className="font-mono">{selectedWinner.ticketNumber}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {isLoading && !error && draws.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
