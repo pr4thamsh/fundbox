@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Trophy, Calendar, Ticket, Eye, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fixDate } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
@@ -32,8 +33,6 @@ interface DrawsProps {
   fundraiserId: number;
   totalTickets: number | null | undefined;
 }
-
-const fixDate = (date: string) => new Date(date);
 
 export default function FundraiserDraws({
   fundraiserId,
@@ -69,16 +68,37 @@ export default function FundraiserDraws({
     fetchDraws();
   }, [fetchDraws]);
 
-  const isDrawDate = (drawDate: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const draw = fixDate(drawDate);
-    draw.setHours(0, 0, 0, 0);
-    return draw.getTime() === today.getTime();
+  // Helper function to check if a draw date is in the future
+  const isDrawInFuture = (drawDate: string) => {
+    const fixedDate = fixDate(drawDate);
+    const now = new Date();
+    // Reset time parts for accurate date comparison
+    now.setHours(0, 0, 0, 0);
+    fixedDate.setHours(0, 0, 0, 0);
+    return fixedDate > now;
+  };
+
+  // Helper function to format the date consistently
+  const formatDrawDate = (drawDate: string) => {
+    const date = fixDate(drawDate);
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   const handlePickWinner = async (draw: Draw) => {
     setError("");
+
+    // Additional date validation before picking winner
+    if (isDrawInFuture(draw.drawDate)) {
+      setError(
+        "This draw can only be processed on or after its scheduled date.",
+      );
+      return;
+    }
+
     setPickingWinnerIds((prev) => [...prev, draw.id]);
 
     try {
@@ -185,7 +205,7 @@ export default function FundraiserDraws({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{fixDate(draw.drawDate).toLocaleDateString()}</span>
+                  <span>{formatDrawDate(draw.drawDate)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Ticket className="h-4 w-4 text-muted-foreground" />
@@ -206,7 +226,7 @@ export default function FundraiserDraws({
                 <Button
                   onClick={() => handlePickWinner(draw)}
                   disabled={
-                    !isDrawDate(draw.drawDate) ||
+                    isDrawInFuture(draw.drawDate) ||
                     !!draw.supporterId ||
                     pickingWinnerIds.includes(draw.id)
                   }
