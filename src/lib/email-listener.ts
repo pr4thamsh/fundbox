@@ -1,6 +1,6 @@
 export async function startEmailListener() {
   try {
-    const response = await fetch("http://localhost:3000/api/send");
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send`);
     if (!response.ok) {
       throw new Error("Failed to start email listener");
     }
