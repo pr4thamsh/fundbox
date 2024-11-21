@@ -5,10 +5,8 @@ import { SupabaseProvider } from "@/components/providers/supabase-provider";
 import { Provider as JotaiProvider } from "jotai";
 import { setupDatabase } from "@/db";
 import { ReactQueryProvider } from "@/components/providers/react-query-provider";
-import { startEmailListener } from "@/lib/email-listener";
 
 setupDatabase().catch(console.error);
-startEmailListener().catch(console.error);
 
 export const metadata: Metadata = {
   title: "FundBox - Fundraiser Manager",
