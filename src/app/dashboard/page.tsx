@@ -71,8 +71,9 @@ export default function DashboardPage() {
         console.error("Failed to fetch fundraisers:", error);
       }
     }
-
-    fetchFundraisers();
+    if (admin?.organizationId) {
+      fetchFundraisers();
+    }
   }, [admin?.organizationId]);
 
   const handleInputChange = (
@@ -122,7 +123,6 @@ export default function DashboardPage() {
         throw new Error(data.error || "Failed to create fundraiser");
       }
 
-      // Fetch updated fundraisers list
       const fundraisersResponse = await fetch(
         `/api/fundraiser?organizationId=${admin?.organizationId}`,
       );
