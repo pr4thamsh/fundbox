@@ -145,7 +145,7 @@ export default function SuccessPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date</span>
                 <span className="font-medium">
-                  {new Date(paymentDetails.payment.created).toString()}
+                  {new Date(paymentDetails.payment.created).toDateString()}
                 </span>
               </div>
               <div className="flex justify-between">

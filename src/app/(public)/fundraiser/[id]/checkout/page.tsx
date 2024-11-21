@@ -270,7 +270,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input placeholder="New York" {...field} />
+                          <Input placeholder="St. John's" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>State</FormLabel>
                         <FormControl>
-                          <Input placeholder="NY" {...field} />
+                          <Input placeholder="NL" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -299,7 +299,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Postal Code</FormLabel>
                         <FormControl>
-                          <Input placeholder="10001" {...field} />
+                          <Input placeholder="A1A 1A1" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -323,8 +323,6 @@ export default function CheckoutPage() {
                           <SelectContent>
                             <SelectItem value="US">United States</SelectItem>
                             <SelectItem value="CA">Canada</SelectItem>
-                            <SelectItem value="GB">United Kingdom</SelectItem>
-                            <SelectItem value="AU">Australia</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
