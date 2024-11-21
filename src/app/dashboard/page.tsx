@@ -5,12 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Timer } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,8 +21,16 @@ import { adminAtom } from "@/store/admin";
 import TiptapEditor from "@/components/tiptap";
 import { DatePickerWithRange } from "@/components/ui/date-picker";
 import { DateRange } from "react-day-picker";
-import { fixDate, formatDateForAPI, isActiveFundraiser } from "@/lib/date-utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  fixDate,
+  formatDateForAPI,
+  isActiveFundraiser,
+} from "@/lib/date-utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Fundraiser = {
   id: number;
@@ -57,8 +60,20 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
+    async function fetchFundraisers() {
+      try {
+        const response = await fetch(
+          `/api/fundraiser?organizationId=${admin?.organizationId}`,
+        );
+        const data = await response.json();
+        setFundraisers(data.data || []);
+      } catch (error) {
+        console.error("Failed to fetch fundraisers:", error);
+      }
+    }
+
     fetchFundraisers();
-  }, []);
+  }, [admin?.organizationId]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -107,9 +122,14 @@ export default function DashboardPage() {
         throw new Error(data.error || "Failed to create fundraiser");
       }
 
-      await fetchFundraisers();
+      // Fetch updated fundraisers list
+      const fundraisersResponse = await fetch(
+        `/api/fundraiser?organizationId=${admin?.organizationId}`,
+      );
+      const fundraisersData = await fundraisersResponse.json();
+      setFundraisers(fundraisersData.data || []);
+
       setIsDialogOpen(false);
-      // Reset form
       setFormData({
         title: "",
         description: "",
@@ -124,16 +144,6 @@ export default function DashboardPage() {
       );
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function fetchFundraisers() {
-    try {
-      const response = await fetch("/api/fundraiser");
-      const data = await response.json();
-      setFundraisers(data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch fundraisers:", error);
     }
   }
 
@@ -234,50 +244,59 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  {fundraisers.map((fundraiser) => (
-    <Tooltip key={fundraiser.id}>
-      <TooltipTrigger asChild>
-        <Card
-          className="flex flex-col cursor-pointer transition-colors border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-          onClick={() => handleCardClick(fundraiser.id)}
-        >
-          <CardHeader>
-            <div className="flex justify-between items-start space-x-4">
-              <CardTitle className="text-xl">{fundraiser.title}</CardTitle>
-              {isActiveFundraiser(fundraiser.startDate, fundraiser.endDate) && (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
-                  Active
-                </span>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 text-sm">
-                <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">Start:</span>
-                <span>{fixDate(fundraiser.startDate).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                <Timer className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">End:</span>
-                <span>{fixDate(fundraiser.endDate).toLocaleDateString()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </TooltipTrigger>
-      <TooltipContent className="bg-black text-white">
-        <p>Edit</p>
-      </TooltipContent>
-    </Tooltip>
-  ))}
-  {fundraisers.length === 0 && (
-    <div className="col-span-full text-center text-muted-foreground py-8">
-      No fundraisers found. Create one to get started.
-    </div>
-  )}
-</div>
+        {fundraisers.map((fundraiser) => (
+          <Tooltip key={fundraiser.id}>
+            <TooltipTrigger asChild>
+              <Card
+                className="flex flex-col cursor-pointer transition-colors border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                onClick={() => handleCardClick(fundraiser.id)}
+              >
+                <CardHeader>
+                  <div className="flex justify-between items-start space-x-4">
+                    <CardTitle className="text-xl">
+                      {fundraiser.title}
+                    </CardTitle>
+                    {isActiveFundraiser(
+                      fundraiser.startDate,
+                      fundraiser.endDate,
+                    ) && (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-800/30 dark:text-green-500">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2 text-sm">
+                      <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-muted-foreground">Start:</span>
+                      <span>
+                        {fixDate(fundraiser.startDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Timer className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-muted-foreground">End:</span>
+                      <span>
+                        {fixDate(fundraiser.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent className="bg-black text-white">
+              <p>Edit</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+        {fundraisers.length === 0 && (
+          <div className="col-span-full text-center text-muted-foreground py-8">
+            No fundraisers found. Create one to get started.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
