@@ -60,6 +60,20 @@ export default function SuccessPage() {
         }
 
         setPaymentDetails(data);
+
+        try {
+          const emailResponse = await fetch("/api/send", {
+            method: "GET",
+          });
+
+          if (!emailResponse.ok) {
+            console.error("Failed to trigger email processing");
+          } else {
+            console.log("✉️ Email processing triggered successfully");
+          }
+        } catch (emailError) {
+          console.error("Error triggering email processing:", emailError);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {

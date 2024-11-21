@@ -1,5 +1,8 @@
-import { ChevronUp, Home, Settings, User2, Building } from "lucide-react";
-
+import { ChevronUp, Home, User2, Building } from "lucide-react";
+import { useAtom } from "jotai";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,13 +15,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@radix-ui/react-dropdown-menu";
-import { SignOutButton } from "./sign-out";
+} from "@/components/ui/dropdown-menu";
+import { adminAtom } from "@/store/admin";
+import Link from "next/link";
 
 const items = [
   {
@@ -31,14 +36,27 @@ const items = [
     url: "/dashboard/organization",
     icon: Building,
   },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
 ];
 
 export function AppSidebar() {
+  const [admin] = useAtom(adminAtom);
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      setIsLoading(true);
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarHeader title="FundBox" />
@@ -67,22 +85,33 @@ export function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton>
-                  <User2 /> Username
+                  <User2 />
+                  <span>
+                    {admin?.firstName} {admin?.lastName}
+                  </span>
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 side="top"
-                className="w-[--radix-popper-anchor-width]"
+                className="w-[--radix-dropdown-menu-trigger-width]"
               >
-                <DropdownMenuItem>
-                  <span>Account</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Home</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Billing</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <SignOutButton />
+                <DropdownMenuItem
+                  className="text-red-600"
+                  disabled={isLoading}
+                  onClick={handleSignOut}
+                >
+                  {isLoading ? (
+                    <span>Signing out...</span>
+                  ) : (
+                    <span>Sign out</span>
+                  )}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
