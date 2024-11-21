@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
+import { draws } from "@/db/schema/draws";
+import { eq } from "drizzle-orm";
 
 type ResponseData = {
   message: string;
@@ -17,21 +19,36 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>,
+  res: NextApiResponse<ResponseData>
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  try {
-    const { drawId } = req.body;
+  const { drawId } = req.body;
 
-    if (!drawId) {
-      return res.status(400).json({
-        message: "Draw ID is required",
+  if (!drawId || typeof drawId !== "number") {
+    return res.status(400).json({
+      message: "Invalid request",
+      error: "Draw ID is required and must be a number",
+    });
+  }
+
+  try {
+    // First verify the draw exists and is ready for winner selection
+    const [draw] = await db
+      .select()
+      .from(draws)
+      .where(eq(draws.id, drawId));
+
+    if (!draw) {
+      return res.status(404).json({
+        message: "Draw not found",
+        error: "The specified draw does not exist",
       });
     }
 
+    // Call the stored procedure
     const [result] = await db.execute<{
       p_selected_supporter_id: number;
       p_first_name: string;
@@ -47,6 +64,11 @@ export default async function handler(
       );
     `);
 
+    // Verify we got a result
+    if (!result.p_selected_supporter_id) {
+      throw new Error("Failed to select winner");
+    }
+
     return res.status(200).json({
       message: "Winner selected successfully",
       data: {
@@ -60,13 +82,13 @@ export default async function handler(
     });
   } catch (error) {
     console.error("Pick winner error:", error);
-    const message =
-      error instanceof Error ? error.message : "Unknown error occurred";
+    const message = error instanceof Error ? error.message : "Unknown error occurred";
 
-    if (message.includes("No tickets found")) {
+    // Handle specific error cases
+    if (message.includes("Draw date is in the future")) {
       return res.status(400).json({
-        message: "No tickets available",
-        error: "No tickets found for this fundraiser",
+        message: "Invalid draw date",
+        error: "Draw cannot be processed before its scheduled date",
       });
     }
     if (message.includes("Winner already selected")) {
@@ -75,10 +97,10 @@ export default async function handler(
         error: "A winner has already been selected for this draw",
       });
     }
-    if (message.includes("Draw can only be processed")) {
+    if (message.includes("No tickets sold")) {
       return res.status(400).json({
-        message: "Invalid draw date",
-        error: "Draw can only be processed on its scheduled date",
+        message: "No tickets available",
+        error: "No tickets have been sold for this fundraiser",
       });
     }
 
