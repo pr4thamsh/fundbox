@@ -4,10 +4,9 @@ import { supporters } from "@/db/schema/supporters";
 import { eq, and, or, ilike, desc } from "drizzle-orm";
 import { NextApiRequest, NextApiResponse } from "next";
 
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ message: "Method not allowed" });
@@ -15,7 +14,7 @@ export default async function handler(
 
   try {
     const { fundraiserId, search } = req.query;
-    
+
     const results = await db
       .select({
         orderId: orders.id,
@@ -31,18 +30,18 @@ export default async function handler(
         supporterPostalCode: supporters.postalCode,
       })
       .from(orders)
-      .leftJoin(supporters, eq(orders.supporterId, supporters.id))
+      .innerJoin(supporters, eq(orders.supporterId, supporters.id))
       .where(
         search
           ? and(
               eq(orders.fundraiserId, Number(fundraiserId)),
               or(
-                ilike(supporters.firstName, `%${search}%`),
-                ilike(supporters.lastName, `%${search}%`),
-                ilike(supporters.email, `%${search}%`)
-              )
+                ilike(supporters.firstName, `${search}%`),
+                ilike(supporters.lastName, `${search}%`),
+                ilike(supporters.email, `${search}%`),
+              ),
             )
-          : eq(orders.fundraiserId, Number(fundraiserId))
+          : eq(orders.fundraiserId, Number(fundraiserId)),
       )
       .orderBy(desc(orders.created_at))
       .limit(100);
