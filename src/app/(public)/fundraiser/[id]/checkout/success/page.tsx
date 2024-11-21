@@ -62,7 +62,7 @@ export default function SuccessPage() {
         setPaymentDetails(data);
 
         try {
-          const emailResponse = await fetch("/api/send", {
+          const emailResponse = await fetch("/api/emails/process", {
             method: "GET",
           });
 
