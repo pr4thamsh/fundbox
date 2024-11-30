@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useEffect } from "react";
 import { Search, Clock, Ticket } from "lucide-react";
@@ -33,15 +33,16 @@ function formatCurrency(amount: number | null) {
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("recent");
+  const [status, setStatus] = useState("active");
   const [fundraisers, setFundraisers] = useState<Fundraiser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchActiveFundraisers = async () => {
+    const fetchFundraisers = async () => {
       try {
-        const response = await fetch("/api/fundraiser?active=true");
+        setLoading(true);
+        const response = await fetch(`/api/fundraiser?status=${status}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -56,8 +57,8 @@ export default function ExplorePage() {
       }
     };
 
-    fetchActiveFundraisers();
-  }, []);
+    fetchFundraisers();
+  }, [status]);
 
   if (loading) {
     return (
@@ -81,40 +82,34 @@ export default function ExplorePage() {
       fundraiser.description?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const sortedFundraisers = [...filteredFundraisers].sort((a, b) => {
-    switch (sortBy) {
-      case "recent":
-        return (
-          new Date(b.startDate || "").getTime() -
-          new Date(a.startDate || "").getTime()
-        );
-      case "endingSoon":
-        return (
-          new Date(a.endDate || "").getTime() -
-          new Date(b.endDate || "").getTime()
-        );
-      case "mostRaised":
-        return (b.fundRaised || 0) - (a.fundRaised || 0);
-      case "mostTickets":
-        return (b.ticketsSold || 0) - (a.ticketsSold || 0);
+  const getBadgeVariant = (status: string) => {
+    switch (status) {
+      case "active":
+        return "default";
+      case "upcoming":
+        return "secondary";
+      case "past":
+        return "outline";
       default:
-        return 0;
+        return "default";
     }
-  });
+  };
 
   return (
     <div className="container mx-auto py-8 px-4">
-      {/* Header Section */}
       <div className="space-y-2 mb-8">
         <h1 className="text-3xl font-bold tracking-tight">
-          Active Fundraisers
+          {status.charAt(0).toUpperCase() + status.slice(1)} Fundraisers
         </h1>
         <p className="text-muted-foreground">
-          Discover and support ongoing fundraisers in your community
+          {status === "active"
+            ? "Discover and support ongoing fundraisers in your community"
+            : status === "upcoming"
+            ? "Preview upcoming fundraising events"
+            : "View past fundraising campaigns"}
         </p>
       </div>
 
-      {/* Search and Filter Section */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -125,27 +120,25 @@ export default function ExplorePage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select value={sortBy} onValueChange={setSortBy}>
+        <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recent">Most Recent</SelectItem>
-            <SelectItem value="endingSoon">Ending Soon</SelectItem>
-            <SelectItem value="mostRaised">Most Raised</SelectItem>
-            <SelectItem value="mostTickets">Most Tickets Sold</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="past">Past</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Fundraisers Grid */}
-      {sortedFundraisers.length === 0 ? (
+      {filteredFundraisers.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No active fundraisers found</p>
+          <p className="text-muted-foreground">No {status} fundraisers found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedFundraisers.map((fundraiser) => (
+          {filteredFundraisers.map((fundraiser) => (
             <Link
               href={`/fundraiser/${fundraiser.id}`}
               key={fundraiser.id}
@@ -162,8 +155,8 @@ export default function ExplorePage() {
                         by Organization {fundraiser.organizationId}
                       </CardDescription>
                     </div>
-                    <Badge variant="secondary" className="ml-2">
-                      Active
+                    <Badge variant={getBadgeVariant(status)} className="ml-2">
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
                     </Badge>
                   </div>
                 </CardHeader>

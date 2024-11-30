@@ -59,5 +59,45 @@ export const activeFundraisersView = pgView("active_fundraisers_view", {
   `,
 );
 
+export const pastFundraisersView = pgView("past_fundraisers_view", {
+  id: serial().primaryKey(),
+  title: varchar().notNull(),
+  description: varchar().notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  ticketsSold: integer("tickets_sold").notNull(),
+  fundRaised: integer("fund_raised").notNull(),
+  organizationId: integer("organization_id").notNull(),
+  adminId: text("admin_id").notNull(),
+  pricePerTicket: integer("price_per_ticket").notNull(),
+  ...timestamps,
+}).as(
+  sql`
+    SELECT * FROM ${fundraisers} 
+    WHERE ${lte(fundraisers.endDate, sql`CURRENT_DATE`)}
+    ORDER BY end_date DESC
+  `,
+);
+
+export const upcomingFundraisersView = pgView("upcoming_fundraisers_view", {
+  id: serial().primaryKey(),
+  title: varchar().notNull(),
+  description: varchar().notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  ticketsSold: integer("tickets_sold").notNull(),
+  fundRaised: integer("fund_raised").notNull(),
+  organizationId: integer("organization_id").notNull(),
+  adminId: text("admin_id").notNull(),
+  pricePerTicket: integer("price_per_ticket").notNull(),
+  ...timestamps,
+}).as(
+  sql`
+    SELECT * FROM ${fundraisers} 
+    WHERE ${gte(fundraisers.startDate, sql`CURRENT_DATE`)}
+    ORDER BY start_date ASC
+  `,
+);
+
 export type Fundraiser = InferSelectModel<typeof fundraisers>;
 export type NewFundraiser = InferInsertModel<typeof fundraisers>;

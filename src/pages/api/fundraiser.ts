@@ -6,6 +6,8 @@ import {
   type NewFundraiser,
   activeFundraisersView,
   fundraisers,
+  pastFundraisersView,
+  upcomingFundraisersView,
 } from "@/db/schema/fundraisers";
 import { organizations } from "@/db/schema/organization";
 import { type Organization } from "@/db/schema/organization";
@@ -88,21 +90,62 @@ async function getFundraisers(
   res: NextApiResponse<ResponseData>,
 ) {
   try {
-    const { organizationId, active } = req.query;
+    const { organizationId, status } = req.query;
 
     let result: Fundraiser[];
 
-    if (active === "true") {
-      result = await db.select().from(activeFundraisersView);
-    } else {
-      if (organizationId) {
-        result = await db
-          .select()
-          .from(fundraisers)
-          .where(eq(fundraisers.organizationId, Number(organizationId)));
-      } else {
-        result = await db.select().from(fundraisers);
-      }
+    switch (status) {
+      case "active":
+        if (organizationId) {
+          result = await db
+            .select()
+            .from(activeFundraisersView)
+            .where(
+              eq(activeFundraisersView.organizationId, Number(organizationId)),
+            );
+        } else {
+          result = await db.select().from(activeFundraisersView);
+        }
+        break;
+
+      case "past":
+        if (organizationId) {
+          result = await db
+            .select()
+            .from(pastFundraisersView)
+            .where(
+              eq(pastFundraisersView.organizationId, Number(organizationId)),
+            );
+        } else {
+          result = await db.select().from(pastFundraisersView);
+        }
+        break;
+
+      case "upcoming":
+        if (organizationId) {
+          result = await db
+            .select()
+            .from(upcomingFundraisersView)
+            .where(
+              eq(
+                upcomingFundraisersView.organizationId,
+                Number(organizationId),
+              ),
+            );
+        } else {
+          result = await db.select().from(upcomingFundraisersView);
+        }
+        break;
+
+      default:
+        if (organizationId) {
+          result = await db
+            .select()
+            .from(fundraisers)
+            .where(eq(fundraisers.organizationId, Number(organizationId)));
+        } else {
+          result = await db.select().from(fundraisers);
+        }
     }
 
     return res.status(200).json({

@@ -1,8 +1,10 @@
 import { db } from "@/db";
 import { orders } from "@/db/schema/orders";
 import { supporters } from "@/db/schema/supporters";
-import { eq, and, or, ilike, desc } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
 import { NextApiRequest, NextApiResponse } from "next";
+
+const DEFAULT_PAGE_SIZE = 10;
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,7 +15,32 @@ export default async function handler(
   }
 
   try {
-    const { fundraiserId, search } = req.query;
+    const {
+      fundraiserId,
+      search,
+      page = "1",
+      pageSize = DEFAULT_PAGE_SIZE,
+    } = req.query;
+    const currentPage = parseInt(page as string);
+    const limit = parseInt(pageSize as string);
+    const offset = (currentPage - 1) * limit;
+
+    const whereCondition = search
+      ? and(
+          eq(orders.fundraiserId, Number(fundraiserId)),
+          or(
+            ilike(supporters.firstName, `${search}%`),
+            ilike(supporters.lastName, `${search}%`),
+            ilike(supporters.email, `${search}%`),
+          ),
+        )
+      : eq(orders.fundraiserId, Number(fundraiserId));
+
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(orders)
+      .innerJoin(supporters, eq(orders.supporterId, supporters.id))
+      .where(whereCondition);
 
     const results = await db
       .select({
@@ -31,22 +58,17 @@ export default async function handler(
       })
       .from(orders)
       .innerJoin(supporters, eq(orders.supporterId, supporters.id))
-      .where(
-        search
-          ? and(
-              eq(orders.fundraiserId, Number(fundraiserId)),
-              or(
-                ilike(supporters.firstName, `${search}%`),
-                ilike(supporters.lastName, `${search}%`),
-                ilike(supporters.email, `${search}%`),
-              ),
-            )
-          : eq(orders.fundraiserId, Number(fundraiserId)),
-      )
+      .where(whereCondition)
       .orderBy(desc(orders.created_at))
-      .limit(100);
+      .limit(limit)
+      .offset(offset);
 
-    return res.status(200).json(results);
+    return res.status(200).json({
+      orders: results,
+      total: countResult.count,
+      page: currentPage,
+      pageSize: limit,
+    });
   } catch (error) {
     console.error("Error fetching orders:", error);
     return res.status(500).json({ message: "Internal server error" });

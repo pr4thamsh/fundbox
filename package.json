@@ -8,9 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "seed:local": "bun run src/db/scripts/seed.ts",
+    "seed:supabase": "bun run src/db/scripts/seed.ts --supabase",
+    "cleanup:local": "bun run src/db/scripts/cleanup.ts",
+    "cleanup:supabase": "bun run src/db/scripts/cleanup.ts --supabase"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.2.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-collapsible": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
