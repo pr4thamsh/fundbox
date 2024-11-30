@@ -109,6 +109,19 @@ export default function FundraiserPage() {
       (1000 * 60 * 60 * 24),
   );
 
+  const getFundraiserStatus = (
+    fundraiser: FundraiserWithOrg,
+  ): "active" | "upcoming" | "ended" => {
+    if (!fundraiser.startDate || !fundraiser.endDate) return "ended";
+    const now = new Date();
+    const startDate = new Date(fundraiser.startDate);
+    const endDate = new Date(fundraiser.endDate);
+
+    if (now < startDate) return "upcoming";
+    if (now > endDate) return "ended";
+    return "active";
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="grid gap-8 md:grid-cols-3">
@@ -137,8 +150,18 @@ export default function FundraiserPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">{daysLeft} days left</span>
             </div>
-            <Badge variant="secondary" color="green">
-              Active
+            <Badge
+              variant="secondary"
+              className={
+                getFundraiserStatus(fundraiser) === "active"
+                  ? "bg-green-100 text-green-800"
+                  : getFundraiserStatus(fundraiser) === "upcoming"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }
+            >
+              {getFundraiserStatus(fundraiser).charAt(0).toUpperCase() +
+                getFundraiserStatus(fundraiser).slice(1)}
             </Badge>
           </div>
 
@@ -242,7 +265,10 @@ export default function FundraiserPage() {
 
                   <Button
                     className="w-full"
-                    disabled={ticketQuantity === 0}
+                    disabled={
+                      ticketQuantity === 0 ||
+                      getFundraiserStatus(fundraiser) !== "active"
+                    }
                     onClick={handleBuyTickets}
                   >
                     {ticketQuantity === 0 ? "Select Tickets" : "Buy Tickets"}
