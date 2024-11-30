@@ -11,6 +11,7 @@ type ResponseData = {
       firstName: string;
       lastName: string;
       email: string;
+      ticketNumber: number;
     };
   };
   error?: string;
@@ -48,6 +49,7 @@ export default async function handler(
       first_name: string;
       last_name: string;
       email: string;
+      winning_ticket_number: number;
     }>(sql`
       SELECT * FROM pick_draw_winner(${drawId});
     `);
@@ -64,6 +66,7 @@ export default async function handler(
           firstName: result.first_name,
           lastName: result.last_name,
           email: result.email,
+          ticketNumber: result.winning_ticket_number,
         },
       },
     });

@@ -27,6 +27,7 @@ type Winner = {
   firstName: string;
   lastName: string;
   email: string;
+  ticketNumber: number;
 };
 
 interface DrawsProps {
@@ -68,17 +69,14 @@ export default function FundraiserDraws({
     fetchDraws();
   }, [fetchDraws]);
 
-  // Helper function to check if a draw date is in the future
   const isDrawInFuture = (drawDate: string) => {
     const fixedDate = fixDate(drawDate);
     const now = new Date();
-    // Reset time parts for accurate date comparison
     now.setHours(0, 0, 0, 0);
     fixedDate.setHours(0, 0, 0, 0);
     return fixedDate > now;
   };
 
-  // Helper function to format the date consistently
   const formatDrawDate = (drawDate: string) => {
     const date = fixDate(drawDate);
     return date.toLocaleDateString(undefined, {
@@ -91,7 +89,6 @@ export default function FundraiserDraws({
   const handlePickWinner = async (draw: Draw) => {
     setError("");
 
-    // Additional date validation before picking winner
     if (isDrawInFuture(draw.drawDate)) {
       setError(
         "This draw can only be processed on or after its scheduled date.",
@@ -260,22 +257,33 @@ export default function FundraiserDraws({
           </DialogHeader>
           {selectedWinner && (
             <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
+              <div className="grid gap-6">
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Name
                   </p>
-                  <p className="font-medium">
+                  <p className="font-medium mt-1">
                     {selectedWinner.firstName} {selectedWinner.lastName}
                   </p>
                 </div>
-                <div className="space-y-2">
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Email
                   </p>
-                  <p className="font-medium break-all">
+                  <p className="font-medium mt-1 break-all">
                     {selectedWinner.email}
                   </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Winning Ticket
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    <p className="font-mono text-lg font-semibold">
+                      #{selectedWinner.ticketNumber}
+                    </p>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
