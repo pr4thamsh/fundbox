@@ -59,7 +59,46 @@ bun dev
 ## Available Commands
 
 ```bash
-bun run dev        # Start development server
+bun run dev          # Start development server
 bun run db:generate  # Generate migrations
-bun run db:push     # Push migrations to database
+bun run db:push      # Push migrations to database
 ```
+
+## Database Seeding
+
+The application includes scripts to seed your database with test data. You can manage seeding through these commands:
+
+### Seed Commands
+
+```bash
+bun seed             # Seed only test data (fundraisers, supporters, orders, draws)
+bun seed --with-auth # Seed everything including organizations and admin accounts
+bun cleanup         # Remove all test data while preserving organizations and admins
+```
+
+### Seeding Details
+
+- **Standard Seed** (`bun seed`):
+
+  - Creates 15 fundraisers
+  - Seeds 5,000 supporters
+  - Generates 5,000 orders
+  - Creates 30 draw events
+  - Requires existing organizations and admins
+
+- **Full Seed** (`bun seed --with-auth`):
+
+  - Seeds default organizations and admin accounts
+  - Then performs standard seed
+  - Use this when setting up a fresh database
+
+- **Cleanup** (`bun cleanup`):
+  - Removes all test data
+  - Preserves organization and admin data
+  - Resets auto-increment sequences
+
+### Notes
+
+- Organizations and admins are preserved during cleanup to maintain auth consistency
+- Standard seed requires existing organizations and admins
+- All passwords for seeded admin accounts are set to "password123"
