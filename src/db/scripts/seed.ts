@@ -22,10 +22,10 @@ if (!dbUrl) {
 const pool = new Pool({ connectionString: dbUrl });
 const db = drizzle(pool);
 
-const FUNDRAISER_COUNT = 15;
-const SUPPORTER_COUNT = 5000;
-const ORDER_COUNT = 5000;
-const DRAW_COUNT = 30;
+const FUNDRAISER_COUNT = 30;
+const SUPPORTER_COUNT = 10000;
+const ORDER_COUNT = 10000;
+const DRAW_COUNT = 55;
 
 const getRandomItem = <T>(array: T[]) =>
   array[faker.number.int({ min: 0, max: array.length - 1 })];
