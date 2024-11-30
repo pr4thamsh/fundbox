@@ -9,9 +9,10 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "seed": "bun run src/db/scripts/seed.ts",
-    "seed:auth": "bun run src/db/scripts/seed.ts --with-auth",
-    "cleanup": "bun run src/db/scripts/cleanup.ts"
+    "seed:local": "bun run src/db/scripts/seed.ts",
+    "seed:supabase": "bun run src/db/scripts/seed.ts --supabase",
+    "cleanup:local": "bun run src/db/scripts/cleanup.ts",
+    "cleanup:supabase": "bun run src/db/scripts/cleanup.ts --supabase"
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",

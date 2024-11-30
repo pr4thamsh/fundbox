@@ -2,14 +2,17 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const pool = new Pool({
-  host: "localhost",
-  port: 5432,
-  user: "fundbox_user",
-  password: "test123",
-  database: "fundbox",
-});
+const dbUrl =
+  process.argv[2] === "--supabase"
+    ? process.env.SUPABASE_DB_URL
+    : process.env.LOCAL_DB_URL;
 
+if (!dbUrl) {
+  console.error("❌ Database URL not found in environment variables");
+  process.exit(1);
+}
+
+const pool = new Pool({ connectionString: dbUrl });
 const db = drizzle(pool);
 
 async function cleanup() {

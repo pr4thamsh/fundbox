@@ -9,20 +9,26 @@ import { orders } from "../schema/orders";
 import { organizations } from "../schema/organization";
 import { supporters } from "../schema/supporters";
 
-const pool = new Pool({
-  host: "localhost",
-  port: 5432,
-  user: "fundbox_user",
-  password: "test123",
-  database: "fundbox",
-});
+const dbUrl =
+  process.argv[2] === "--supabase"
+    ? process.env.SUPABASE_DB_URL
+    : process.env.LOCAL_DB_URL;
 
+if (!dbUrl) {
+  console.error("❌ Database URL not found in environment variables");
+  process.exit(1);
+}
+
+const pool = new Pool({ connectionString: dbUrl });
 const db = drizzle(pool);
 
 const FUNDRAISER_COUNT = 15;
 const SUPPORTER_COUNT = 5000;
 const ORDER_COUNT = 5000;
 const DRAW_COUNT = 30;
+
+const getRandomItem = <T>(array: T[]) =>
+  array[faker.number.int({ min: 0, max: array.length - 1 })];
 
 const generatePostalCode = () => {
   const letters = "ABCEFGHIJKLMNPRSTVWXYZ";
@@ -72,60 +78,17 @@ const generateFundraiserDates = (index: number) => {
   }
 };
 
-async function seedOrganizationsAndAdmins() {
-  console.log("🏢 Seeding organizations...");
-  const orgInserts = [
-    {
-      name: "Test Organization 1",
-      street: faker.location.streetAddress(),
-      postalCode: generatePostalCode(),
-    },
-    {
-      name: "Test Organization 2",
-      street: faker.location.streetAddress(),
-      postalCode: generatePostalCode(),
-    },
-  ];
-  const orgs = await db.insert(organizations).values(orgInserts).returning();
-
-  console.log("👤 Seeding admins...");
-  const adminEmails = ["test1@example.com", "test2@example.com"];
-  const adminInserts = adminEmails.map((email, i) => ({
-    id: faker.string.uuid(),
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
-    email,
-    phone: faker.phone.number({ style: "national" }),
-    password: "password123",
-    organizationId: orgs[i].id,
-  }));
-  const createdAdmins = await db
-    .insert(admins)
-    .values(adminInserts)
-    .returning();
-
-  return { orgs, admins: createdAdmins };
-}
-
-async function seed(includeAuth = false) {
+async function seed() {
   try {
     console.log("🌱 Starting database seed...");
 
-    let orgs = [];
-    let createdAdmins = [];
+    // Fetch existing organizations and admins
+    const orgs = await db.select().from(organizations);
+    const existingAdmins = await db.select().from(admins);
 
-    if (includeAuth) {
-      const authData = await seedOrganizationsAndAdmins();
-      orgs = authData.orgs;
-      createdAdmins = authData.admins;
-    } else {
-      orgs = await db.select().from(organizations);
-      createdAdmins = await db.select().from(admins);
-    }
-
-    if (orgs.length === 0 || createdAdmins.length === 0) {
+    if (orgs.length === 0 || existingAdmins.length === 0) {
       throw new Error(
-        "❌ No organizations or admins found. Run with --with-auth flag to seed them.",
+        "❌ No organizations or admins found in database. Please create them first.",
       );
     }
 
@@ -134,6 +97,14 @@ async function seed(includeAuth = false) {
     for (let i = 0; i < FUNDRAISER_COUNT; i++) {
       const { startDate, endDate } = generateFundraiserDates(i);
       const pricePerTicket = faker.number.int({ min: 5, max: 50 });
+      const randomOrg = getRandomItem(orgs);
+      const orgAdmins = existingAdmins.filter(
+        (admin) => admin.organizationId === randomOrg.id,
+      );
+      const randomAdmin =
+        orgAdmins.length > 0
+          ? getRandomItem(orgAdmins)
+          : getRandomItem(existingAdmins);
 
       fundraiserInserts.push({
         title: faker.company.catchPhrase(),
@@ -142,12 +113,8 @@ async function seed(includeAuth = false) {
         endDate,
         ticketsSold: 0,
         fundRaised: 0,
-        organizationId:
-          orgs[faker.number.int({ min: 0, max: orgs.length - 1 })].id,
-        adminId:
-          createdAdmins[
-            faker.number.int({ min: 0, max: createdAdmins.length - 1 })
-          ].id,
+        organizationId: randomOrg.id,
+        adminId: randomAdmin.id,
         pricePerTicket,
       });
     }
@@ -179,23 +146,17 @@ async function seed(includeAuth = false) {
     console.log("🎫 Seeding orders...");
     const orderInserts = [];
     for (let i = 0; i < ORDER_COUNT; i++) {
-      const fundraiser =
-        createdFundraisers[
-          faker.number.int({ min: 0, max: createdFundraisers.length - 1 })
-        ];
+      const randomFundraiser = getRandomItem(createdFundraisers);
       const ticketCount = faker.number.int({ min: 1, max: 10 });
-      const amount = ticketCount * fundraiser.pricePerTicket;
+      const amount = ticketCount * randomFundraiser.pricePerTicket;
 
       orderInserts.push({
         ticketNumbers: Array.from({ length: ticketCount }, (_, i) => i + 1),
         amount,
         stripePaymentIntentId: `pi_${faker.string.alphanumeric(24)}`,
         stripePaymentStatus: "succeeded",
-        fundraiserId: fundraiser.id,
-        supporterId:
-          createdSupporters[
-            faker.number.int({ min: 0, max: createdSupporters.length - 1 })
-          ].id,
+        fundraiserId: randomFundraiser.id,
+        supporterId: getRandomItem(createdSupporters).id,
       });
     }
 
@@ -226,18 +187,12 @@ async function seed(includeAuth = false) {
     console.log("🎲 Seeding draws...");
     const drawInserts = [];
     for (let i = 0; i < DRAW_COUNT; i++) {
-      const fundraiser =
-        createdFundraisers[
-          faker.number.int({ min: 0, max: createdFundraisers.length - 1 })
-        ];
+      const randomFundraiser = getRandomItem(createdFundraisers);
       drawInserts.push({
         drawDate: getFutureDate(3).toDateString(),
         prize: faker.commerce.product(),
-        fundraiserId: fundraiser.id,
-        supporterId:
-          createdSupporters[
-            faker.number.int({ min: 0, max: createdSupporters.length - 1 })
-          ].id,
+        fundraiserId: randomFundraiser.id,
+        supporterId: getRandomItem(createdSupporters).id,
       });
     }
     await db.insert(draws).values(drawInserts);
@@ -251,6 +206,4 @@ async function seed(includeAuth = false) {
   }
 }
 
-const args = process.argv.slice(2);
-const includeAuth = args.includes("--with-auth");
-seed(includeAuth);
+seed();

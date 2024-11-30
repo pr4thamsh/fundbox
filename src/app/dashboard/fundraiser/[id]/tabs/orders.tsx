@@ -39,27 +39,36 @@ export default function OrdersTab({ fundraiserId }: OrdersTabProps) {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
     setSearch(value);
+    setPage(1); // Reset to first page on new search
   }, 500);
 
   const {
-    data: orders,
+    data: paginatedData,
     isLoading,
     isFetching,
-  } = useQuery<Order[]>({
-    queryKey: ["orders", fundraiserId, search],
+  } = useQuery<{ orders: Order[]; total: number }>({
+    queryKey: ["orders", fundraiserId, search, page],
     queryFn: async () => {
       const res = await fetch(
         `/api/orders/${fundraiserId}?${new URLSearchParams({
           search,
+          page: page.toString(),
+          pageSize: pageSize.toString(),
         })}`,
       );
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
   });
+
+  const totalPages = paginatedData
+    ? Math.ceil(paginatedData.total / pageSize)
+    : 0;
 
   const toggleRow = useCallback((orderId: number) => {
     setExpandedRows((prev) => {
@@ -120,7 +129,7 @@ export default function OrdersTab({ fundraiserId }: OrdersTabProps) {
                 </TableCell>
               </TableRow>
             )}
-            {!isLoading && orders?.length === 0 && (
+            {!isLoading && paginatedData?.orders.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -131,7 +140,7 @@ export default function OrdersTab({ fundraiserId }: OrdersTabProps) {
               </TableRow>
             )}
             {!isLoading &&
-              orders?.map((order) => (
+              paginatedData?.orders.map((order) => (
                 <React.Fragment key={order.orderId}>
                   <TableRow>
                     <TableCell>
@@ -213,6 +222,33 @@ export default function OrdersTab({ fundraiserId }: OrdersTabProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 0 && (
+        <div className="flex items-center justify-between px-2">
+          <div className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || isLoading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || isLoading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
