@@ -47,3 +47,4 @@ drizzle
 
 # Don't ignore migration files
 !drizzle/migrations/
+backup
