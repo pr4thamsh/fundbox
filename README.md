@@ -71,26 +71,21 @@ The application includes scripts to seed your database with test data. You can m
 ### Seed Commands
 
 ```bash
-bun seed             # Seed only test data (fundraisers, supporters, orders, draws)
-bun seed --with-auth # Seed everything including organizations and admin accounts
-bun cleanup         # Remove all test data while preserving organizations and admins
+bun seed:local             # Seed only test data (fundraisers, supporters, orders, draws) in local db
+bun cleanup:local        # Remove all test data and admins in local db
+bun seed:supabase            # Seed only test data (fundraisers, supporters, orders, draws) in supabase db
+bun cleanup:supabase         # Remove all test data in the supabase db
 ```
 
 ### Seeding Details
 
 - **Standard Seed** (`bun seed`):
 
-  - Creates 15 fundraisers
-  - Seeds 5,000 supporters
-  - Generates 5,000 orders
-  - Creates 30 draw events
+  - Creates 30 fundraisers
+  - Seeds 10,000 supporters
+  - Generates 10,000 orders
+  - Creates 55 draw events
   - Requires existing organizations and admins
-
-- **Full Seed** (`bun seed --with-auth`):
-
-  - Seeds default organizations and admin accounts
-  - Then performs standard seed
-  - Use this when setting up a fresh database
 
 - **Cleanup** (`bun cleanup`):
   - Removes all test data
