@@ -274,17 +274,6 @@ export default function FundraiserDraws({
                     {selectedWinner.email}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Winning Ticket
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Ticket className="h-4 w-4 text-primary" />
-                    <p className="font-mono text-lg font-semibold">
-                      #{selectedWinner.ticketNumber}
-                    </p>
-                  </div>
-                </div>
               </div>
               <DialogFooter>
                 <Button
